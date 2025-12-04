@@ -54,6 +54,10 @@ This is also how users can navigate to my blog. Some common terminal commands ar
 
 
 
+`-h` View all available commands
+
+
+
 `Chisholm` shows a music video I helped create for a friend's first song film within Chisholm Hall in 2022.
 
 
