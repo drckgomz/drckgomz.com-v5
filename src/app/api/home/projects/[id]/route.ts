@@ -1,13 +1,17 @@
 // src/app/api/home/projects/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const revalidate = 0;
+
 export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } }
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> } // 👈 Next 16 expects params to be a Promise
 ) {
+  // params is a Promise<{ id: string }>
+  const { id } = await context.params;
+
   const supabase = createSupabaseServerClient();
-  const id = decodeURIComponent(params.id);
 
   const { data, error } = await supabase
     .from("home_projects")
@@ -18,9 +22,17 @@ export async function GET(
     .maybeSingle();
 
   if (error) {
-    console.error("[GET /api/home/projects/[id]] error", error);
-    return NextResponse.json({ project: null }, { status: 500 });
+    console.error("[api/home/projects/[id]] supabase error", error);
+    return NextResponse.json(
+      { project: null, error: "Failed to load project" },
+      { status: 500 }
+    );
   }
 
-  return NextResponse.json({ project: data });
+  return NextResponse.json(
+    {
+      project: data ?? null,
+    },
+    { status: 200 }
+  );
 }
