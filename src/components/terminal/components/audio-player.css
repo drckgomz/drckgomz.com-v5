@@ -1,0 +1,50 @@
+/* frontend/src/shared/styles/audio-player.css */
+/* Dark by default (mobile), transparent on md+ like your v3 */
+.custom-audio {
+  background-color: black;
+  color-scheme: dark;
+  height: 40px;
+  border: none;
+  outline: none;
+  width: 100%;
+}
+
+/* WebKit (Chrome/Safari) enclosure background & icon colors */
+.custom-audio::-webkit-media-controls-enclosure {
+  background-color: black !important;
+  color: white !important;
+}
+
+/* Make default controls “white” on dark */
+.custom-audio::-webkit-media-controls-play-button,
+.custom-audio::-webkit-media-controls-volume-slider,
+.custom-audio::-webkit-media-controls-mute-button,
+.custom-audio::-webkit-media-controls-timeline,
+.custom-audio::-webkit-media-controls-current-time-display,
+.custom-audio::-webkit-media-controls-time-remaining-display {
+  filter: invert(1) brightness(2) contrast(200%);
+}
+
+/* Optional: remove buffer bar styling in WebKit */
+.custom-audio::-webkit-media-controls-timeline {
+  background: none !important;
+}
+
+/* Desktop: transparent like v3 */
+@media (min-width: 768px) {
+  .custom-audio {
+    background-color: transparent !important;
+    color-scheme: light; /* helps invert filters look clean */
+  }
+  .custom-audio::-webkit-media-controls-enclosure {
+    background-color: transparent !important;
+  }
+  .custom-audio::-webkit-media-controls-play-button,
+  .custom-audio::-webkit-media-controls-volume-slider,
+  .custom-audio::-webkit-media-controls-mute-button,
+  .custom-audio::-webkit-media-controls-timeline,
+  .custom-audio::-webkit-media-controls-current-time-display,
+  .custom-audio::-webkit-media-controls-time-remaining-display {
+    filter: invert(1) brightness(1.5) contrast(200%);
+  }
+}
