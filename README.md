@@ -14,9 +14,9 @@ This page shows multiple sections that introduce who I am and what I do.
 
 - **Hero Section** – My name, profile picture, and a small intro.
 - **About Section** – A deeper dive into my background and what I’m aiming for.
-- **Skills** – A list of the skills I currently have and actively practice.
 - **Projects** – Tiles for all my featured projects, each with more info and links to live demos or repos.
 - **Experience** – Any previous experience worth showcasing.
+- **Skills** – A list of the skills I currently have and actively practice.
 - **Resume** – Lets the user view my current resume.
 - **Contact** – Allows people to send me a message if they want to reach out.
 

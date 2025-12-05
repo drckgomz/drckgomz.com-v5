@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#media files
+public/patio2Background.webm
+public/terminalBackground.jpeg
+public/logo192.png
+public/logo512.png
+public/instagram.png
+public/x.png
+public/youtube.png
+public/do-u-remember.mp3
+public/dockBackground.webm
