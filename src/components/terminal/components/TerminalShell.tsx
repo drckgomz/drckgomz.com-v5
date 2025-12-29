@@ -196,7 +196,7 @@ export default function TerminalShell() {
         if (isLoaded && userId) {
           router.push("/blog");
         } else {
-          router.push("/auth?to=/blog");
+          router.push("/blog");
         }
         return;
       }

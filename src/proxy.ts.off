@@ -1,0 +1,24 @@
+// src/proxy.ts
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+// If you're proxying to a separate backend:
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3001";
+
+export function proxy(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
+
+  // ✅ Only proxy /api/* (or whatever you intend)
+  if (!pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
+  // Example: proxy /api/* -> http://localhost:3001/*
+  const url = new URL(`${API_BASE}${pathname.replace(/^\/api/, "")}${search}`);
+  return NextResponse.rewrite(url);
+}
+
+// ✅ Make sure the matcher ONLY matches /api/*
+export const config = {
+  matcher: ["/api/:path*"],
+};

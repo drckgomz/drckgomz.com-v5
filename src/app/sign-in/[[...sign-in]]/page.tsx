@@ -1,0 +1,21 @@
+// src/app/sign-in/[[...sign-in]]/page.tsx
+"use client";
+import { SignIn } from "@clerk/nextjs";
+import DotsCanvas from "@/components/home/DotsCanvas";
+import Header from "@/components/terminal/components/Header";
+
+export default function SignInPage() {
+  return (
+    <main className="relative min-h-dvh grid place-items-center p-8 overflow-hidden bg-background">
+      <Header />
+      <div aria-hidden className="absolute inset-0 z-0 pointer-events-none">
+        <DotsCanvas className="w-full h-full" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
+      </div>
+
+      <div className="relative z-10">
+        <SignIn routing="hash" />
+      </div>
+    </main>
+  );
+}
