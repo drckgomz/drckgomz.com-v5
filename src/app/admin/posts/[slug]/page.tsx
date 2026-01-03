@@ -1,7 +1,7 @@
 // src/app/admin/posts/[slug]/page.tsx
 import { requireAdmin } from "@/lib/admin/requireAdmin";
 import { getAdminPostBySlug } from "@/lib/admin/getAdminPost";
-import ManagePostForm from "@/features/blog/components/admin/ManagePostForm";
+import ManagePostForm from "@/components/blog/admin/ManagePostForm/ManagePostForm";
 import { Card } from "@/components/ui/card";
 import { notFound } from "next/navigation";
 
