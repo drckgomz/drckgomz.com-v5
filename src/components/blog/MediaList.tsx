@@ -352,7 +352,7 @@ export default function MediaList({
                   <Button
                     type="button"
                     variant="ghost"
-                    size="xs"
+                    size="sm"
                     className="h-6 px-2 text-xs text-primary hover:bg-primary/10"
                     onClick={() => onInsert(m.id)}
                     disabled={!!savingId}
@@ -363,7 +363,7 @@ export default function MediaList({
                   <Button
                     type="button"
                     variant="ghost"
-                    size="xs"
+                    size="sm"
                     className="h-6 px-2 text-xs text-destructive hover:bg-destructive/10"
                     onClick={() => onRemove(m.id)}
                   >
@@ -374,7 +374,7 @@ export default function MediaList({
                     <Button
                       type="button"
                       variant="ghost"
-                      size="xs"
+                      size="sm"
                       className="h-6 px-2 text-xs text-amber-300 hover:bg-amber-500/10"
                       title="Use as post thumbnail"
                       onClick={() => onSetThumbnail({ id: m.id, url: m.url })}

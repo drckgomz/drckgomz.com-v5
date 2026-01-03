@@ -1,6 +1,6 @@
 // src/app/(protected)/blog/page.tsx  (SERVER)
 import { currentUser } from "@clerk/nextjs/server";
-import Navbar from "@/components/blog/Navbar.server";
+import Navbar from "@/components/blog/Navbar";
 import BlogFooter from "@/components/blog/BlogFooter";
 import AllPostsGrid from "@/components/blog/AllPostsGrid";
 

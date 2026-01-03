@@ -1,6 +1,6 @@
 // src/app/admin/layout.tsx
 import type { ReactNode } from "react";
-import Navbar from "@/components/blog/Navbar.server";
+import Navbar from "@/components/blog/Navbar";
 import BlogFooter from "@/components/blog/BlogFooter";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

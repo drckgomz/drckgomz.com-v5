@@ -1,7 +1,7 @@
 // src/app/settings/page.tsx
 import "server-only";
 import { redirect } from "next/navigation";
-import Navbar from "@/components/blog/Navbar.server";
+import Navbar from "@/components/blog/Navbar";
 import BlogFooter from "@/components/blog/BlogFooter";
 import AccountSettingsClient from "@/components/blog/AccountSettings.client";
 import { getUserProfile } from "@/lib/profile/getUserProfile";
