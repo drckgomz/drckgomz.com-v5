@@ -27,12 +27,12 @@ export default function HeroSectionClient({ hero }: HeroProps) {
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
       viewport={{ once: true }}
-      className="w-full min-h-screen flex items-center justify-center px-6 pt-0 text-white"
+      className="w-full min-h-screen flex items-start sm:items-center justify-center px-6 pt-24 sm:pt-0 text-white"
     >
       <Card className="max-w-3xl w-full bg-transparent border-0 shadow-xl">
         <CardContent className="flex flex-col items-center gap-6 py-10">
           {/* Avatar / hero image */}
-          <Avatar className="h-40 w-40 sm:h-70 sm:w-70 shadow-lg overflow-hidden">
+          <Avatar className="h-56 w-56 sm:h-70 sm:w-70 shadow-lg overflow-hidden">
             {hero.thumbnail_url ? (
               <AvatarImage
                 src={hero.thumbnail_url}
@@ -40,7 +40,7 @@ export default function HeroSectionClient({ hero }: HeroProps) {
                 className="h-full w-full object-cover"
                 style={{
                   objectPosition: `${hero.crop.x}% ${hero.crop.y}%`,
-                  transform: `scale(${hero.crop.zoom})`,
+                  transform: `scale(${hero.crop.zoom * 1.1})`,
                   transformOrigin: "center center",
                 }}
                 onError={(e) => {
