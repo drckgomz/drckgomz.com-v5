@@ -10,7 +10,7 @@ export default function SignInPage() {
       <Header />
       <div aria-hidden className="absolute inset-0 z-0 pointer-events-none">
         <DotsCanvas className="w-full h-full" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
+        <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/60" />
       </div>
 
       <div className="relative z-10">

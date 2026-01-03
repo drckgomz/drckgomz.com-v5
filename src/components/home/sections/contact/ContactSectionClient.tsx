@@ -50,7 +50,7 @@ export default function ContactSectionClient({ toEmail }: Props) {
       viewport={{ once: true }}
       className="w-full min-h-screen flex items-center justify-center px-6 py-16 text-white"
     >
-      <Card className="max-w-3xl w-full text-white bg-black/70 border-1 border-white shadow-xl">
+      <Card className="max-w-3xl w-full text-white bg-black/70 border border-white shadow-xl">
         <CardHeader className="text-center space-y-3">
           <CardTitle className="text-3xl sm:text-5xl font-bold">
             Let&apos;s Connect

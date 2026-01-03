@@ -371,7 +371,7 @@ export default function HiddenVideo({ videoRef, videoSrc, onClose, id }: Props) 
               setVolume(v);
               if (muted && v > 0) setMuted(false);
             }}
-            className="absolute w-36 origin-center rotate-[-90deg] accent-white
+            className="absolute w-36 origin-center -rotate-90 accent-white
                        [::-webkit-slider-runnable-track]:h-1
                        [::-webkit-slider-thumb]:appearance-none
                        [::-webkit-slider-thumb]:h-4 [::-webkit-slider-thumb]:w-4

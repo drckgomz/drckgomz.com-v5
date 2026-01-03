@@ -15,7 +15,7 @@ export default async function SettingsPage() {
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
       <Navbar />
-      <main className="flex-grow mt-20 px-4">
+      <main className="grow mt-20 px-4">
         <AccountSettingsClient initialProfile={profile} />
       </main>
       <BlogFooter />

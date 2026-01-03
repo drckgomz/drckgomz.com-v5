@@ -11,7 +11,7 @@ export default async function BlogPage() {
     <div className="flex flex-col min-h-screen bg-black text-white">
       <Navbar />
 
-      <main className="flex-grow mt-28 px-6 w-full max-w-7xl mx-auto">
+      <main className="grow mt-28 px-6 w-full max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold mb-4 text-center">
           Welcome to the Blog{user?.firstName ? `, ${user.firstName}` : ""}!
         </h1>

@@ -185,7 +185,7 @@ export default function AllPostsGrid({ hideTitle = false }: { hideTitle?: boolea
                 className="relative bg-gray-800 rounded-lg shadow-lg cursor-pointer transition duration-300 transform hover:scale-105 w-64"
               >
                 <Link href={postHref(post)}>
-                  <div className="w-full aspect-[16/9] overflow-hidden rounded-md">
+                  <div className="w-full aspect-video overflow-hidden rounded-md">
                     <img
                       src={thumbnail}
                       alt={post.title}
@@ -197,7 +197,7 @@ export default function AllPostsGrid({ hideTitle = false }: { hideTitle?: boolea
                   </div>
                   <div className="mt-2 text-center p-2">
                     <h2 className="text-lg font-semibold text-white flex items-center justify-center">
-                      <span className="truncate max-w-[10rem]">{post.title}</span>
+                      <span className="truncate max-w-40">{post.title}</span>
                       <StatusBadge status={post.status} />
                     </h2>
                     <p className="text-xs text-gray-400">
