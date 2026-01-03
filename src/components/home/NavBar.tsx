@@ -157,7 +157,7 @@ export default function NavBar() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-lg font-semibold tracking-wide text-white hover:bg-white/10"
+                className="rounded-xl bg-transparent px-5 py-4 text-4xl font-semibold tracking-wide text-center text-white hover:bg-white/10"
               >
                 {item.label}
               </Link>
