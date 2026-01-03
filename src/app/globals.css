@@ -133,7 +133,12 @@
 .border-prompt-color { border-color: var(--prompt-color); }
 
 .bg-prompt-10 { background-color: #7cfc9a1a; }
-.bg-prompt-10 { background-color: color-mix(in oklab, var(--prompt-color) 10%, transparent); }
+
+@supports (background-color: color-mix(in oklab, white 10%, transparent)) {
+  .bg-prompt-10 {
+    background-color: color-mix(in oklab, var(--prompt-color) 10%, transparent);
+  }
+}
 
 
 @supports (scrollbar-color: auto) {
@@ -150,7 +155,13 @@
 
 
 /* terminal output scrollbar (webkit + ff) */
-#terminal-output { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.25) transparent; }
+@supports (scrollbar-width: thin) {
+  #terminal-output {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,.25) transparent;
+  }
+}
+
 #terminal-output::-webkit-scrollbar { width: 6px; }
 #terminal-output::-webkit-scrollbar-track { background: transparent; }
 #terminal-output::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,.25); border-radius: 10px; }

@@ -18,7 +18,7 @@ function NavItem({ href, children }: { href: string; children: React.ReactNode }
       className="group relative inline-flex items-center text-sm md:text-base font-semibold tracking-wide text-white/70 transition-all duration-200 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
     >
       <span>{children}</span>
-      <span className="pointer-events-none absolute -bottom-1 left-0 h-[2px] w-0 bg-white/80 transition-all duration-200 group-hover:w-full" />
+      <span className="pointer-events-none absolute -bottom-1 left-0 h-0.5 w-0 bg-white/80 transition-all duration-200 group-hover:w-full" />
     </Link>
   );
 }
@@ -28,23 +28,24 @@ function Hamburger({ open, onClick }: { open: boolean; onClick: () => void }) {
     <button
       type="button"
       aria-label={open ? "Close menu" : "Open menu"}
-      aria-expanded={open}
+      {...{ "aria-expanded": open ? "true" : "false" }}
+      aria-controls="mobile-nav"
       onClick={onClick}
       className="md:hidden inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
     >
       <span className="relative block h-4 w-5">
         <span
-          className={`absolute left-0 top-0 h-[2px] w-full bg-white transition-transform ${
+          className={`absolute left-0 top-0 h-0.5 w-full bg-white transition-transform ${
             open ? "translate-y-[7px] rotate-45" : ""
           }`}
         />
         <span
-          className={`absolute left-0 top-[7px] h-[2px] w-full bg-white transition-opacity ${
+          className={`absolute left-0 top-[7px] h-0.5 w-full bg-white transition-opacity ${
             open ? "opacity-0" : "opacity-100"
           }`}
         />
         <span
-          className={`absolute left-0 bottom-0 h-[2px] w-full bg-white transition-transform ${
+          className={`absolute left-0 bottom-0 h-0.5 w-full bg-white transition-transform ${
             open ? "-translate-y-[7px] -rotate-45" : ""
           }`}
         />
@@ -129,6 +130,10 @@ export default function NavBar() {
 
       {/* Mobile full-screen menu */}
       <div
+        id="mobile-nav"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile navigation"
         className={`md:hidden fixed inset-0 z-50 transition-opacity ${
           menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}

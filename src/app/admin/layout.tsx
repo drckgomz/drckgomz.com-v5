@@ -7,7 +7,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       <Navbar />
-      <div className="flex-grow pt-16">{children}</div>
+      <div className="grow pt-16">{children}</div>
       <BlogFooter />
     </div>
   );

@@ -122,7 +122,7 @@ export default function ManagePostForm({
             id="post-content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="min-h-[320px] w-full rounded-md border border-border bg-background/40 p-3 text-sm"
+            className="min-h-80 w-full rounded-md border border-border bg-background/40 p-3 text-sm"
             placeholder="Write your post..."
           />
         </div>

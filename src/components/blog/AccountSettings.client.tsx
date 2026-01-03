@@ -102,6 +102,7 @@ export default function AccountSettingsClient({ initialProfile }: Props) {
             >
               {initials}
             </div>
+
             <div className="text-xs text-white">
               <div className="font-medium text-sm">Profile avatar</div>
               <div>Based on your initials + color.</div>

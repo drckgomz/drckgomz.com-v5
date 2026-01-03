@@ -135,7 +135,7 @@ export default function AboutSectionClient({
             <div className="flex flex-col sm:flex-row items-center gap-8 w-full">
               {/* Carousel (click to open lightbox) */}
               <div className="w-full sm:w-auto flex flex-col items-center">
-                <div className="relative w-[18rem] h-[18rem] sm:w-[20rem] sm:h-[20rem] rounded-xl overflow-hidden bg-white/5 border border-white/10 shadow-lg">
+                <div className="relative w-[18rem] h-72 sm:w-[20rem] sm:h-80 rounded-xl overflow-hidden bg-white/5 border border-white/10 shadow-lg">
                   {current ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -216,7 +216,7 @@ export default function AboutSectionClient({
         {lightboxOpen && lbMedia && (
           <motion.div
             key="about-lightbox"
-            className="fixed inset-0 z-[9999]"
+            className="fixed inset-0 z-9999"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -308,7 +308,7 @@ export default function AboutSectionClient({
                 {lbMedia.caption && lbMedia.caption.trim() && (
                   <div className="absolute left-0 right-0 bottom-0 text-center">
                     <div className="pointer-events-none mx-auto max-w-5xl px-4 py-3 text-sm text-white">
-                      <div className="bg-gradient-to-t from-black/70 to-transparent -mb-3 pb-3 pt-8 px-4 rounded-t-xl">
+                      <div className="bg-linear-to-t from-black/70 to-transparent -mb-3 pb-3 pt-8 px-4 rounded-t-xl">
                         <span className="block">{lbMedia.caption}</span>
                       </div>
                     </div>
