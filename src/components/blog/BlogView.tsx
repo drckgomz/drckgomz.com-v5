@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import { useAuth } from "@clerk/nextjs";
 
-import NavBar from "@/features/blog/components/Navbar";
+import NavBar from "@/components/blog/Navbar";
 import BlogContent from "./BlogContent";
 import MediaCarousel from "./MediaCarousel";
 
@@ -17,10 +17,10 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/shared/components/ui/card";
-import { Badge } from "@/shared/components/ui/badge";
-import { Button } from "@/shared/components/ui/button";
-import { Separator } from "@/shared/components/ui/separator";
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 type MediaItem = {
   id: string;

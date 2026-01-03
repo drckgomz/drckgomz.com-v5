@@ -4,7 +4,7 @@
 import * as React from "react";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
-import { startInactivityLogout } from "@/shared/utils/inactivityWatcher";
+import { startInactivityLogout } from "@/lib/utils/inactivityWatcher";
 
 export default function IdleLogoutGuard({ minutes = 5 }: { minutes?: number }) {
   const { isLoaded, isSignedIn } = useAuth();

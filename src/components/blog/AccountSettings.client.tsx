@@ -9,7 +9,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 
 const COLOR_OPTIONS = [
   { value: "#4A90E2", label: "Blue", className: "bg-blue-500" },

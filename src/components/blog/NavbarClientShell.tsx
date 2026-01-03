@@ -3,9 +3,9 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 import type { UserProfile } from "@/lib/profile/types";
-import UserAvatarClient from "./UserAvatar.client";
+import UserAvatarClient from "@/components/blog/UserAvatar.client";
 
 export default function NavbarClientShell({ profile }: { profile: UserProfile | null }) {
   const router = useRouter();

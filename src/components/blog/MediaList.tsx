@@ -3,11 +3,11 @@
 
 import * as React from "react";
 import { ReactSortable } from "react-sortablejs";
-import { getYouTubeVideoId } from "@/features/blog/lib/media";
-import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
-import { Separator } from "@/shared/components/ui/separator";
-import { cn } from "@/shared/lib/utils";
+import { getYouTubeVideoId } from "@/lib/blog/media";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils/utils";
 
 type MediaItem = {
   id: string;
