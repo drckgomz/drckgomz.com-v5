@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import DOMPurify from "dompurify";
-import { replacePlaceholders, type MediaItem } from "@/features/blog/embed/render";
+import { replacePlaceholders, type MediaItem } from "@/lib/blog/render";
 
 const DBG = (label: string, payload?: any) =>
   console.debug(`[BlogContent] ${label}`, payload);
