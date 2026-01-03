@@ -10,7 +10,7 @@ import ContactSection from "@/components/home/sections/contact/ContactSection";
 
 export default function HomePage() {
   return (
-    <div className="w-screen bg-transparent text-white overflow-x-hidden">
+    <div className="min-h-dvh w-full bg-transparent text-white overflow-x-clip">
       {/* Nav */}
       <NavBar />
 

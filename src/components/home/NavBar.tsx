@@ -1,7 +1,7 @@
 // src/components/home/NavBar.tsx
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 
 const NAV_ITEMS = [
@@ -11,23 +11,13 @@ const NAV_ITEMS = [
   { href: "/terminal", label: "TERMINAL" },
 ] as const;
 
-function NavItem({
-  href,
-  children,
-  onClick,
-}: {
-  href: string;
-  children: React.ReactNode;
-  onClick?: () => void;
-}) {
+function NavItem({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Link
       href={href}
-      onClick={onClick}
-      className="group relative inline-flex items-center text-sm md:text-base font-semibold tracking-wide text-white/60 transition-all duration-200 transform-gpu hover:text-white hover:-translate-y-0.5 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+      className="group relative inline-flex items-center text-sm md:text-base font-semibold tracking-wide text-white/70 transition-all duration-200 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
     >
       <span>{children}</span>
-      {/* animated underline */}
       <span className="pointer-events-none absolute -bottom-1 left-0 h-[2px] w-0 bg-white/80 transition-all duration-200 group-hover:w-full" />
     </Link>
   );
@@ -40,27 +30,23 @@ function Hamburger({ open, onClick }: { open: boolean; onClick: () => void }) {
       aria-label={open ? "Close menu" : "Open menu"}
       aria-expanded={open}
       onClick={onClick}
-      className="md:hidden inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+      className="md:hidden inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
     >
-      <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
       <span className="relative block h-4 w-5">
         <span
-          className={[
-            "absolute left-0 top-0 h-[2px] w-full bg-white transition-transform duration-200",
-            open ? "translate-y-[7px] rotate-45" : "",
-          ].join(" ")}
+          className={`absolute left-0 top-0 h-[2px] w-full bg-white transition-transform ${
+            open ? "translate-y-[7px] rotate-45" : ""
+          }`}
         />
         <span
-          className={[
-            "absolute left-0 top-[7px] h-[2px] w-full bg-white transition-opacity duration-200",
-            open ? "opacity-0" : "opacity-100",
-          ].join(" ")}
+          className={`absolute left-0 top-[7px] h-[2px] w-full bg-white transition-opacity ${
+            open ? "opacity-0" : "opacity-100"
+          }`}
         />
         <span
-          className={[
-            "absolute left-0 bottom-0 h-[2px] w-full bg-white transition-transform duration-200",
-            open ? "-translate-y-[7px] -rotate-45" : "",
-          ].join(" ")}
+          className={`absolute left-0 bottom-0 h-[2px] w-full bg-white transition-transform ${
+            open ? "-translate-y-[7px] -rotate-45" : ""
+          }`}
         />
       </span>
     </button>
@@ -68,49 +54,28 @@ function Hamburger({ open, onClick }: { open: boolean; onClick: () => void }) {
 }
 
 export default function NavBar() {
-  const [hidden, setHidden] = useState(false);
-  const [atTop, setAtTop] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [atTop, setAtTop] = useState(true);
 
-  const lastY = useRef(0);
-  const ticking = useRef(false);
-
-  // Hide-on-scroll behavior (same as before)
+  // ✅ show ONLY at the very top
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const threshold = 8;
 
     const onScroll = () => {
-      if (ticking.current) return;
-      ticking.current = true;
+      const y = window.scrollY || 0;
+      const nowAtTop = y <= threshold;
+      setAtTop(nowAtTop);
 
-      requestAnimationFrame(() => {
-        const y = window.scrollY || 0;
-        const isAtTop = y <= 8;
-        setAtTop(isAtTop);
-
-        if (isAtTop) {
-          setHidden(false);
-        } else {
-          const goingDown = y > lastY.current + 2;
-          const goingUp = y < lastY.current - 2;
-
-          if (goingDown) setHidden(true);
-          if (goingUp) setHidden(false);
-        }
-
-        lastY.current = y;
-        ticking.current = false;
-      });
+      // If user leaves the top, hide menu too
+      if (!nowAtTop) setMenuOpen(false);
     };
 
-    lastY.current = window.scrollY || 0;
-    setAtTop(lastY.current <= 8);
-
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Lock body scroll when mobile menu is open
+  // lock scroll when mobile menu open
   useEffect(() => {
     if (!menuOpen) return;
     const prev = document.body.style.overflow;
@@ -120,17 +85,7 @@ export default function NavBar() {
     };
   }, [menuOpen]);
 
-  // Close on ESC
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [menuOpen]);
-
-  const slideClass = hidden && !atTop ? "-translate-y-full" : "translate-y-0";
+  const headerVisibleClass = atTop ? "translate-y-0" : "-translate-y-full";
 
   return (
     <>
@@ -138,30 +93,28 @@ export default function NavBar() {
       <div className="h-16 md:h-14" aria-hidden="true" />
 
       <header
-        role="banner"
         className={[
-          "fixed inset-x-0 top-0 z-40",
-          "bg-black/40 backdrop-blur-md border-b border-white/10",
+          "fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-black/70 backdrop-blur-md",
           "transition-transform duration-300 ease-out will-change-transform",
-          slideClass,
+          headerVisibleClass,
         ].join(" ")}
+        role="banner"
       >
         <nav
           className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:h-14 text-white"
           aria-label="Main"
         >
-          {/* brand */}
+          {/* Brand */}
           <Link
             href="/"
             className="text-2xl md:text-4xl font-extrabold tracking-wide hover:opacity-85"
-            aria-label="Go to home"
             onClick={() => setMenuOpen(false)}
           >
             DRCKGOMZ
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-4 md:gap-6">
+          <div className="hidden md:flex items-center gap-6">
             {NAV_ITEMS.map((item) => (
               <NavItem key={item.href} href={item.href}>
                 {item.label}
@@ -169,50 +122,32 @@ export default function NavBar() {
             ))}
           </div>
 
-          {/* Mobile hamburger */}
-          <Hamburger open={menuOpen} onClick={() => setMenuOpen((v) => !v)} />
+          {/* Mobile hamburger (only usable at top) */}
+          <Hamburger open={menuOpen} onClick={() => setMenuOpen(!menuOpen)} />
         </nav>
       </header>
 
       {/* Mobile full-screen menu */}
       <div
-        className={[
-          "md:hidden fixed inset-0 z-50",
-          "transition-opacity duration-200",
-          menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-        ].join(" ")}
-        aria-hidden={!menuOpen}
+        className={`md:hidden fixed inset-0 z-50 transition-opacity ${
+          menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
       >
-        {/* backdrop */}
         <button
-          type="button"
-          className="absolute inset-0 bg-black/70"
+          className="absolute inset-0 bg-black/80"
           aria-label="Close menu"
           onClick={() => setMenuOpen(false)}
         />
 
-        {/* panel */}
-        <div
-          className={[
-            "absolute inset-0",
-            "bg-black",
-            "pt-6 px-6",
-            "transition-transform duration-200",
-            menuOpen ? "translate-y-0" : "-translate-y-2",
-          ].join(" ")}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Mobile navigation"
-        >
+        <div className="absolute inset-0 bg-black px-6 pt-6">
           <div className="flex items-center justify-between">
             <Link
               href="/"
-              className="text-2xl font-extrabold tracking-wide text-white hover:opacity-85"
+              className="text-2xl font-extrabold tracking-wide text-white"
               onClick={() => setMenuOpen(false)}
             >
               DRCKGOMZ
             </Link>
-
             <Hamburger open={menuOpen} onClick={() => setMenuOpen(false)} />
           </div>
 
@@ -222,7 +157,7 @@ export default function NavBar() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-xl bg-transparent px-5 py-4 text-4xl font-semibold tracking-wide text-center text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                className="rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-lg font-semibold tracking-wide text-white hover:bg-white/10"
               >
                 {item.label}
               </Link>

@@ -94,7 +94,7 @@ export default function DotsCanvas({ className, ...rest }: Props) {
       className={`relative w-full h-full bg-black ${className ?? ""}`}
       {...rest}
     >
-      <canvas ref={canvasRef} className="absolute inset-0" aria-hidden />
+      <canvas ref={canvasRef} className="absolute pointer-events-none inset-0" aria-hidden />
     </div>
   );
 }

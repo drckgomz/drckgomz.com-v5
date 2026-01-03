@@ -24,7 +24,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       afterSignUpUrl="/blog"
     >
       <html lang="en">
-        <body className="bg-black text-white">{children}</body>
+        <body className="min-h-dvh bg-black text-white overflow-x-hidden overflow-y-auto">
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   );
