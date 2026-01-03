@@ -222,18 +222,7 @@ export default function ResumeModal({
             {canPrintInline ? "Print" : "Open to Print"}
           </Button>
 
-          {body && body.kind !== "text" && (
-            <Button
-              type="button"
-              variant="outline"
-              asChild
-              className="border-white/30 text-white hover:bg-white/10"
-            >
-              <a href={body.url} target="_blank" rel="noreferrer">
-                Open Original
-              </a>
-            </Button>
-          )}
+          
         </div>
       </DialogContent>
     </Dialog>
