@@ -268,7 +268,7 @@ export default function BlogView({ slug }: { slug: string }) {
                 {post.status ? (
                   <Badge
                     variant={statusVariant(post.status)}
-                    className="uppercase text-[10px] tracking-wide border-white/20 text-white"
+                    className="uppercase text-[10px] bg-black tracking-wide border-white text-white"
                   >
                     {statusLabel(post.status)}
                   </Badge>
