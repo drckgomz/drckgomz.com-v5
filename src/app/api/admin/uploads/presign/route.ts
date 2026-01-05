@@ -62,7 +62,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ url, key });
   } catch (err: any) {
     console.error("PRESIGN_ERROR:", err);
-    return new NextResponse(err?.message || "Presign failed", { status: 500 });
+    return NextResponse.json(
+      {
+        error: err?.message || String(err),
+        name: err?.name,
+        stack: process.env.NODE_ENV === "development" ? err?.stack : undefined,
+      },
+      { status: 500 }
+    );
   }
+
 }
 
