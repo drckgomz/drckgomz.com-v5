@@ -1,9 +1,13 @@
-// frontend/src/features/blog/components/AllPostsGrid.tsx
+// src/components/blog/AllPostsGrid.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import * as React from "react";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
+
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type MediaItem = { type: string; url: string };
 
@@ -16,44 +20,10 @@ type Post = {
   status?: string;
 };
 
-function StatusBadge({ status }: { status?: string }) {
-  const s = String(status || "").toLowerCase();
-  const label =
-    s === "public"
-      ? "Public"
-      : s === "private"
-      ? "Private"
-      : s === "draft"
-      ? "Draft"
-      : s === "archived"
-      ? "Archived"
-      : "";
-  if (!label) return null;
-
-  const className =
-    s === "public"
-      ? "bg-emerald-600/20 text-emerald-300 ring-1 ring-emerald-600/40"
-      : s === "private"
-      ? "bg-blue-600/20 text-blue-300 ring-1 ring-blue-600/40"
-      : s === "archived"
-      ? "bg-amber-600/20 text-amber-300 ring-1 ring-amber-600/40"
-      : "bg-gray-600/20 text-gray-300 ring-1 ring-gray-600/40";
-
-  return (
-    <span
-      className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide ${className}`}
-    >
-      {label}
-    </span>
-  );
-}
-
-// Helper: turn thumbnail_url into a full URL if it’s relative
 function resolveUrl(url: string | null | undefined): string {
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
 
-  // you likely want NEXT_PUBLIC_S3_MEDIA_BASE based on your env
   const base =
     process.env.NEXT_PUBLIC_S3_MEDIA_BASE ||
     "https://derickgomez-images.s3.amazonaws.com";
@@ -61,24 +31,17 @@ function resolveUrl(url: string | null | undefined): string {
   return `${base.replace(/\/$/, "")}/${url.replace(/^\//, "")}`;
 }
 
-// Normalize backend post objects into the Post type used by the UI
 function normalizePost(raw: any): Post {
   const created_at = raw.created_at || raw.date || "";
 
   let media: MediaItem[] = [];
-
   if (Array.isArray(raw.media) && raw.media.length > 0) {
     media = raw.media.map((m: any) => ({
       type: m.type || "image",
       url: String(m.url || ""),
     }));
   } else if (raw.thumbnail_url) {
-    media = [
-      {
-        type: "image",
-        url: resolveUrl(raw.thumbnail_url),
-      },
-    ];
+    media = [{ type: "image", url: resolveUrl(raw.thumbnail_url) }];
   }
 
   return {
@@ -91,26 +54,106 @@ function normalizePost(raw: any): Post {
   };
 }
 
+function postHref(post: Post) {
+  return post.slug ? `/blog/${post.slug}` : `/blog/${post.id}`;
+}
+
+function getThumbnail(mediaList?: MediaItem[]) {
+  const fallback = "/logo192.png";
+  if (!mediaList?.length) return fallback;
+
+  const top = mediaList[0];
+  if (!top?.url) return fallback;
+
+  if (top.type === "image") return top.url;
+
+  if (top.type === "youtube") {
+    const url = top.url;
+    const videoId =
+      url.split("v=")[1]?.split("&")[0] ||
+      url.split("/").filter(Boolean).pop();
+    if (videoId) return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  }
+
+  return fallback;
+}
+
+function StatusBadge({ status }: { status?: string }) {
+  const s = String(status || "").toLowerCase();
+
+  // if you still want to show these badges on the protected blog home, keep them.
+  // if not, just return null.
+  const label =
+    s === "public"
+      ? "Public"
+      : s === "private"
+      ? "Private"
+      : s === "draft"
+      ? "Draft"
+      : s === "archived"
+      ? "Archived"
+      : "";
+
+  if (!label) return null;
+
+  const variantClass =
+    s === "public"
+      ? "bg-emerald-500/15 text-emerald-200 border-emerald-500/30"
+      : s === "private"
+      ? "bg-blue-500/15 text-blue-200 border-blue-500/30"
+      : s === "archived"
+      ? "bg-amber-500/15 text-amber-200 border-amber-500/30"
+      : "bg-white/10 text-white/80 border-white/20";
+
+  return (
+    <Badge
+      variant="outline"
+      className={`ml-2 border text-[10px] uppercase tracking-wide ${variantClass}`}
+    >
+      {label}
+    </Badge>
+  );
+}
+
+function LoadingGrid() {
+  return (
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Card key={i} className="bg-black border border-white/10 overflow-hidden">
+          <div className="aspect-video">
+            <Skeleton className="h-full w-full" />
+          </div>
+          <CardHeader className="space-y-2">
+            <Skeleton className="h-5 w-4/5" />
+            <Skeleton className="h-3 w-1/3" />
+          </CardHeader>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export default function AllPostsGrid({ hideTitle = false }: { hideTitle?: boolean }) {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [posts, setPosts] = React.useState<Post[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
   const { getToken } = useAuth();
 
-  useEffect(() => {
+  React.useEffect(() => {
     let mounted = true;
 
     async function fetchPosts() {
+      setLoading(true);
+      setError(null);
+
       try {
         const token = await getToken().catch(() => null);
 
         const qs = new URLSearchParams();
-        qs.set("status", "all");
+        qs.set("status", "all"); // keep your current behavior
 
-        const url = `/api/public/blogs?${qs.toString()}`;
-
-        const res = await fetch(url, {
+        const res = await fetch(`/api/public/blogs?${qs.toString()}`, {
           cache: "no-store",
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
@@ -127,6 +170,7 @@ export default function AllPostsGrid({ hideTitle = false }: { hideTitle?: boolea
           : data.items ?? data.posts ?? data.blogs ?? [];
 
         const normalized = rawList.map(normalizePost);
+
         if (mounted) setPosts(normalized.slice(0, 25));
       } catch (err: any) {
         console.error("[AllPostsGrid] fetch error:", err);
@@ -142,73 +186,95 @@ export default function AllPostsGrid({ hideTitle = false }: { hideTitle?: boolea
     };
   }, [getToken]);
 
-  const getThumbnail = (mediaList?: MediaItem[]) => {
-    const fallback = "/logo192.png";
-    if (!mediaList || mediaList.length === 0) return fallback;
+  if (loading) {
+    return (
+      <div className="w-full">
+        {!hideTitle && (
+          <h2 className="mb-6 text-center text-3xl font-bold">All Blog Posts</h2>
+        )}
+        <LoadingGrid />
+      </div>
+    );
+  }
 
-    const top = mediaList[0];
-    if (!top || !top.url) return fallback;
+  if (error) {
+    return <div className="text-center text-red-500">{error}</div>;
+  }
 
-    if (top.type === "image") return top.url;
-
-    if (top.type === "youtube") {
-      const url = top.url;
-      const videoId =
-        url.split("v=")[1]?.split("&")[0] ||
-        url.split("/").filter(Boolean).pop();
-
-      if (videoId) return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-    }
-
-    return fallback;
-  };
-
-  const postHref = (post: Post) => (post.slug ? `/blog/${post.slug}` : `/blog/${post.id}`);
-
-  if (loading) return <div className="text-center text-white">Loading...</div>;
-  if (error) return <div className="text-center text-red-500">{error}</div>;
-  if (posts.length === 0)
-    return <div className="text-center text-gray-400">No blog posts found.</div>;
+  if (posts.length === 0) {
+    return <div className="text-center text-white/60">No blog posts found.</div>;
+  }
 
   return (
-    <div className="w-full flex justify-center">
-      <div className="max-w-6xl w-full px-4">
-        {!hideTitle && <h1 className="text-4xl font-bold mb-6 text-center">All Blog Posts</h1>}
-        <div className="flex flex-wrap justify-center gap-6">
-          {posts.map((post) => {
-            const thumbnail = getThumbnail(post.media);
-            const key = post.id ?? post.slug ?? Math.random().toString(36);
+    <div className="w-full">
+      {!hideTitle && (
+        <h2 className="mb-6 text-center text-3xl font-bold">All Blog Posts</h2>
+      )}
 
-            return (
-              <div
-                key={key}
-                className="relative bg-gray-800 rounded-lg shadow-lg cursor-pointer transition duration-300 transform hover:scale-105 w-64"
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {posts.map((post) => {
+          const thumbnail = getThumbnail(post.media);
+
+          return (
+            <Link
+              key={post.id}
+              href={postHref(post)}
+              className="group focus-visible:outline-none"
+              aria-label={`Open blog post: ${post.title}`}
+            >
+              <Card
+                className="
+                  h-full overflow-hidden
+                  bg-black border border-white/10
+                  transition
+                  group-hover:-translate-y-0.5
+                  group-hover:border-white/20
+                  group-focus-visible:ring-2 group-focus-visible:ring-white/60
+                "
               >
-                <Link href={postHref(post)}>
-                  <div className="w-full aspect-video overflow-hidden rounded-md">
-                    <img
-                      src={thumbnail}
-                      alt={post.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/logo192.png";
-                      }}
-                    />
+                <div className="relative aspect-video overflow-hidden border-b border-white/10">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={thumbnail}
+                    alt={post.title}
+                    className="
+                      h-full w-full object-cover
+                      transition-transform duration-300
+                      group-hover:scale-[1.02]
+                    "
+                    loading="lazy"
+                    decoding="async"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "/logo192.png";
+                    }}
+                  />
+
+                  {/* subtle overlay on hover */}
+                  <div className="pointer-events-none absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
+                </div>
+
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center justify-center sm:justify-start">
+                        <h3 className="truncate text-base font-semibold text-white">
+                          {post.title}
+                        </h3>
+                        <StatusBadge status={post.status} />
+                      </div>
+
+                      <p className="mt-1 text-xs text-white/60">
+                        {post.created_at
+                          ? new Date(post.created_at).toLocaleDateString()
+                          : ""}
+                      </p>
+                    </div>
                   </div>
-                  <div className="mt-2 text-center p-2">
-                    <h2 className="text-lg font-semibold text-white flex items-center justify-center">
-                      <span className="truncate max-w-40">{post.title}</span>
-                      <StatusBadge status={post.status} />
-                    </h2>
-                    <p className="text-xs text-gray-400">
-                      {post.created_at ? new Date(post.created_at).toLocaleDateString() : ""}
-                    </p>
-                  </div>
-                </Link>
-              </div>
-            );
-          })}
-        </div>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
