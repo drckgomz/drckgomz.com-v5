@@ -27,7 +27,7 @@ function statusVariant(status: ProjectStatus) {
 
 function getThumb(p: Project) {
   // cover is stored in home_projects.image_url (set from media library)
-  return p.image_url || "/logo192.png";
+  return p.image_url || "https://derickgomez-images.s3.us-east-1.amazonaws.com/logo192.png";
 }
 
 export default function ProjectRow({
@@ -57,7 +57,7 @@ export default function ProjectRow({
         <div className="min-w-0">
           <div className="flex items-center gap-2 min-w-0">
             <div className="truncate font-semibold">{p.title || "(untitled)"}</div>
-            <Badge variant={statusVariant(p.status)} className="capitalize">
+            <Badge variant={statusVariant(p.status)} className="bg-black text-white border border-white capitalize">
               {p.status}
             </Badge>
           </div>
@@ -72,13 +72,13 @@ export default function ProjectRow({
       </div>
 
       <div className="flex items-center gap-2">
-        <Button asChild variant="secondary" size="sm">
+        <Button asChild variant="secondary" className="bg-white border border-white hover:bg-black hover:text-white" size="sm">
           <Link href={`/admin/projects/${p.id}`}>Edit</Link>
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" className="bg-black" size="sm">
               Actions
             </Button>
           </DropdownMenuTrigger>

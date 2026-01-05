@@ -39,11 +39,11 @@ export default function AdminProjectsPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button className="bg-black" variant="outline" onClick={fetchProjects}>
+          <Button className="bg-black text-white hover:bg-white hover:text-black" variant="outline" onClick={fetchProjects}>
             Refresh
           </Button>
 
-          <Button asChild>
+          <Button className="bg-white text-black border border-white hover:bg-black hover:text-white" asChild>
             <Link href="/admin/projects/new">+ New Project</Link>
           </Button>
         </div>
@@ -53,18 +53,28 @@ export default function AdminProjectsPage() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex flex-wrap gap-2">
-          {TABS.map((t) => (
-            <Button
-              key={t}
-              size="sm"
-              variant={tab === t ? "default" : "secondary"}
-              className="capitalize"
-              onClick={() => setTab(t)}
-            >
-              {t}
-            </Button>
-          ))}
+          {TABS.map((t) => {
+            const selected = tab === t;
+
+            return (
+              <Button
+                key={t}
+                size="sm"
+                variant="outline"
+                className={[
+                  "capitalize border border-white",
+                  selected
+                    ? "bg-black text-white hover:bg-black hover:text-white"
+                    : "bg-white text-black hover:bg-black hover:text-white",
+                ].join(" ")}
+                onClick={() => setTab(t)}
+              >
+                {t}
+              </Button>
+            );
+          })}
         </div>
+
 
         <div className="sm:ml-auto sm:w-80">
           <Input
@@ -79,7 +89,7 @@ export default function AdminProjectsPage() {
         <div className="mt-4 text-sm text-destructive">error: {error}</div>
       ) : null}
 
-      <Card className="mt-5 p-4">
+      <Card className="mt-5 bg-black text-white p-4">
         {loading ? (
           <div className="space-y-3">
             <div className="flex items-center gap-3">
