@@ -4,7 +4,14 @@ import { NextResponse } from "next/server";
 import { getUserProfile } from "@/lib/profile/getUserProfile";
 
 export async function requireAdminApi() {
-  const profile = await getUserProfile();
+  let profile = null;
+
+  try {
+    profile = await getUserProfile();
+  } catch (err) {
+    console.error("[requireAdminApi] getUserProfile threw:", err);
+    return NextResponse.json({ error: "Auth check failed" }, { status: 500 });
+  }
 
   if (!profile) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

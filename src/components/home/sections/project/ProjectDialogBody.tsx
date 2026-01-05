@@ -86,11 +86,11 @@ export default function ProjectDialogBody({
     <div className="space-y-5">
       {/* Media carousel */}
       {loading ? (
-        <div className="w-full aspect-video rounded-lg border border-white/10 bg-white/10 animate-pulse" />
+        <div className="w-full aspect-video rounded-lg border border-white bg-white/10 animate-pulse" />
       ) : media?.length ? (
         <InlineCarousel media={media} accent={accent} />
       ) : (
-        <div className="text-sm text-white/80 italic">No media yet.</div>
+        <div className="text-sm text-white italic">No media yet.</div>
       )}
 
       {/* External link */}
@@ -116,7 +116,7 @@ export default function ProjectDialogBody({
           Visit project ↗
         </a>
       ) : (
-        <div className="text-xs text-white/70">No external link provided.</div>
+        <div className="text-xs text-white">No external link provided.</div>
       )}
 
       {/* Long content (HTML string) */}
@@ -127,7 +127,7 @@ export default function ProjectDialogBody({
             prose-headings:text-white
             prose-p:text-white
             prose-strong:text-white
-            prose-a:text-white underline decoration-white/40 hover:decoration-white
+            prose-a:text-white underline decoration-white hover:decoration-white
 
             /* preserve literal \n + multiple spaces */
             whitespace-pre-wrap wrap-break-words
