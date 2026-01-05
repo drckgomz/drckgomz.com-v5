@@ -6,18 +6,14 @@ export const revalidate = 0;
 
 export async function GET(
   _req: NextRequest,
-  context: { params: Promise<{ id: string }> } // 👈 Next 16 expects params to be a Promise
+  context: { params: Promise<{ id: string }> } // Next 16 params is a Promise
 ) {
-  // params is a Promise<{ id: string }>
   const { id } = await context.params;
-
   const supabase = createSupabaseServerClient();
 
   const { data, error } = await supabase
     .from("home_projects")
-    .select(
-      "id, idx, title, slug, excerpt, href, color, image_url, content, status"
-    )
+    .select("id, idx, title, slug, excerpt, href, color, image_url, content, status")
     .eq("id", id)
     .maybeSingle();
 
@@ -29,10 +25,10 @@ export async function GET(
     );
   }
 
-  return NextResponse.json(
-    {
-      project: data ?? null,
-    },
-    { status: 200 }
-  );
+  // ✅ Hide drafts/private from public route
+  if (!data || data.status !== "public") {
+    return NextResponse.json({ project: null }, { status: 404 });
+  }
+
+  return NextResponse.json({ project: data }, { status: 200 });
 }

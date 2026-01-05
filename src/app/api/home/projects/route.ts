@@ -11,6 +11,7 @@ const MEDIA_BASE = process.env.NEXT_PUBLIC_S3_MEDIA_BASE || "";
 
 function normalizeMediaUrl(url: string | null): string | null {
   if (!url) return null;
+
   let out = url;
 
   // Only rewrite if we actually have a MEDIA_BASE configured
@@ -23,14 +24,13 @@ function normalizeMediaUrl(url: string | null): string | null {
   return out;
 }
 
-
 export const revalidate = 0; // always fresh (you can tweak later)
 
 export async function GET(req: Request) {
   const supabase = createSupabaseServerClient();
   const { searchParams } = new URL(req.url);
 
-  const limit = Number(searchParams.get("limit") ?? 6) || 6;
+  const limit = Math.min(Number(searchParams.get("limit") ?? 6) || 6, 50);
   const offset = Number(searchParams.get("offset") ?? 0) || 0;
 
   const { data, error, count } = await supabase
@@ -55,6 +55,8 @@ export async function GET(req: Request) {
       `,
       { count: "exact" }
     )
+    // ✅ ONLY PUBLIC projects for the home grid
+    .eq("status", "public")
     .order("idx", { ascending: true })
     .range(offset, offset + limit - 1);
 
@@ -70,10 +72,7 @@ export async function GET(req: Request) {
         : [];
 
       // sort by idx so top media is consistent
-      const media = mediaRaw.sort(
-        (a, b) => (a.idx ?? 0) - (b.idx ?? 0)
-      );
-
+      const media = mediaRaw.sort((a, b) => (a.idx ?? 0) - (b.idx ?? 0));
       const topImage = media.find((m) => m.type === "image");
 
       // pick in this order:
@@ -92,6 +91,7 @@ export async function GET(req: Request) {
         href: row.href,
         color: row.color,
         image_url: normalizeMediaUrl(row.image_url),
+        // status is always public here, but keeping it is fine
         status: row.status,
         display_thumb_url,
       };

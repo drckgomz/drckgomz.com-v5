@@ -6,12 +6,29 @@ export const revalidate = 0;
 
 export async function GET(
   _req: NextRequest,
-  context: { params: Promise<{ id: string }> } // 👈 match Next 16 type
+  context: { params: Promise<{ id: string }> } // Next 16 params is a Promise
 ) {
-  // params is a Promise<{ id: string }>
   const { id } = await context.params;
-
   const supabase = createSupabaseServerClient();
+
+  // ✅ Guard: only return media if project is public
+  const { data: proj, error: projErr } = await supabase
+    .from("home_projects")
+    .select("id, status")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (projErr) {
+    console.error("[api/home/projects/[id]/media] project lookup error", projErr);
+    return NextResponse.json(
+      { media: [], error: "Failed to load project" },
+      { status: 500 }
+    );
+  }
+
+  if (!proj || proj.status !== "public") {
+    return NextResponse.json({ media: [] }, { status: 404 });
+  }
 
   const { data, error } = await supabase
     .from("home_project_media")
@@ -20,10 +37,7 @@ export async function GET(
     .order("idx", { ascending: true });
 
   if (error) {
-    console.error(
-      "[api/home/projects/[id]/media] supabase error",
-      error
-    );
+    console.error("[api/home/projects/[id]/media] supabase error", error);
     return NextResponse.json(
       { media: [], error: "Failed to load project media" },
       { status: 500 }
