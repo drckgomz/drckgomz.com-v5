@@ -5,13 +5,14 @@ import * as React from "react";
 import InlineCarousel from "@/components/home/sections/project/InlineCarousel";
 import type { Project } from "@/components/home/sections/project/useProjectDetail";
 
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+
 function hexToRgba(input: string, alphaOverride?: number) {
   const raw = (input ?? "").trim();
-
-  // If already rgba/rgb, just pass through (optionally replace alpha)
   if (/^rgba?\(/i.test(raw)) {
     if (alphaOverride == null) return raw;
-    // naive replace alpha if rgba(...); if rgb(...), convert to rgba
     const nums = raw.replace(/[^\d.,]/g, "").split(",").map((x) => Number(x.trim()));
     if (nums.length >= 3) {
       const [r, g, b] = nums;
@@ -19,19 +20,10 @@ function hexToRgba(input: string, alphaOverride?: number) {
     }
   }
 
-  // Normalize hex: allow "f11e1e" or "#f11e1e"
   let h = raw.startsWith("#") ? raw.slice(1) : raw;
   h = h.trim();
-
-  // Expand #RGBA or #RGB
-  if (h.length === 3 || h.length === 4) {
-    h = h.split("").map((c) => c + c).join("");
-  }
-
-  // Now we support:
-  // RRGGBB (6) or RRGGBBAA (8)
+  if (h.length === 3 || h.length === 4) h = h.split("").map((c) => c + c).join("");
   if (h.length !== 6 && h.length !== 8) {
-    // fallback cyan-ish
     const a = alphaOverride ?? 1;
     return `rgba(34, 211, 238, ${a})`;
   }
@@ -40,23 +32,16 @@ function hexToRgba(input: string, alphaOverride?: number) {
   const g = parseInt(h.slice(2, 4), 16);
   const b = parseInt(h.slice(4, 6), 16);
 
-  // If hex includes AA, use it unless override provided
   let aFromHex = 1;
-  if (h.length === 8) {
-    aFromHex = parseInt(h.slice(6, 8), 16) / 255;
-  }
-
+  if (h.length === 8) aFromHex = parseInt(h.slice(6, 8), 16) / 255;
   const a = alphaOverride ?? aFromHex;
 
-  // Guard NaN
   if (![r, g, b, a].every((n) => Number.isFinite(n))) {
     const a2 = alphaOverride ?? 1;
     return `rgba(34, 211, 238, ${a2})`;
   }
-
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
-
 
 export default function ProjectDialogBody({
   loading,
@@ -74,7 +59,6 @@ export default function ProjectDialogBody({
   const accent = React.useMemo(() => {
     const c = (project?.color ?? "").trim();
     if (!c) return "#22d3ee";
-    // if it's plain hex without '#', add it
     if (/^[0-9a-f]{3,8}$/i.test(c)) return `#${c}`;
     return c;
   }, [project?.color]);
@@ -82,8 +66,93 @@ export default function ProjectDialogBody({
   const accentGlow = hexToRgba(accent, 0.35);
   const accentBorder = hexToRgba(accent, 0.85);
 
+  // ✅ Lightbox state for embedded images in HTML content
+  const [openImg, setOpenImg] = React.useState(false);
+  const [imgSrc, setImgSrc] = React.useState<string | null>(null);
+  const [imgAlt, setImgAlt] = React.useState<string>("");
+
+  const onContentClick = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    // If user clicks an image (or something inside a picture), find the IMG
+    const img = target.closest?.("img") as HTMLImageElement | null;
+    if (!img) return;
+
+    const src = img.currentSrc || img.src;
+    if (!src) return;
+
+    // If the image is wrapped in a link, prevent navigation so we can lightbox it
+    const link = img.closest?.("a") as HTMLAnchorElement | null;
+    if (link) e.preventDefault();
+
+    setImgSrc(src);
+    setImgAlt(img.alt || "");
+    setOpenImg(true);
+  }, []);
+
   return (
     <div className="space-y-5">
+      {/* ✅ Embedded content image viewer */}
+      <Dialog
+        open={openImg}
+        onOpenChange={(v) => {
+          setOpenImg(v);
+          if (!v) {
+            setImgSrc(null);
+            setImgAlt("");
+          }
+        }}
+      >
+        {/* If your dialog.tsx supports showCloseButton, disable it here: showCloseButton={false} */}
+        <DialogContent
+          // showCloseButton={false}
+          className="
+            w-screen h-screen max-w-none
+            p-0 border-0
+            bg-black/90
+            overflow-hidden
+            rounded-none
+          "
+        >
+          <DialogTitle className="sr-only">
+            {imgAlt ? `Image: ${imgAlt}` : "Image preview"}
+          </DialogTitle>
+
+          {/* single close button */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => setOpenImg(false)}
+            className="
+              absolute right-4 top-4 z-50
+              rounded-full
+              bg-black/50 hover:bg-black/70
+              text-white
+              ring-1 ring-white/15
+            "
+            aria-label="Close image preview"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+
+          <div className="relative flex h-full w-full items-center justify-center">
+            {imgSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={imgSrc}
+                alt={imgAlt}
+                draggable={false}
+                className="max-h-full max-w-full object-contain select-none"
+              />
+            ) : (
+              <div className="text-white/80 text-sm">No image selected.</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Media carousel */}
       {loading ? (
         <div className="w-full aspect-video rounded-lg border border-white bg-white/10 animate-pulse" />
@@ -122,6 +191,7 @@ export default function ProjectDialogBody({
       {/* Long content (HTML string) */}
       {html ? (
         <div
+          onClick={onContentClick}
           className={`
             prose prose-invert max-w-none
             prose-headings:text-white
@@ -129,14 +199,14 @@ export default function ProjectDialogBody({
             prose-strong:text-white
             prose-a:text-white underline decoration-white hover:decoration-white
 
-            /* preserve literal \n + multiple spaces */
             whitespace-pre-wrap wrap-break-words
 
-            /* figures spacing */
             prose-figure:my-4 prose-figcaption:text-white/70
 
-            /* make <br> behave like a real line break in prose blocks */
             [&_br]:block
+
+            /* nice affordance: show pointer on images */
+            [&_img]:cursor-zoom-in
           `}
           dangerouslySetInnerHTML={{ __html: html }}
         />
