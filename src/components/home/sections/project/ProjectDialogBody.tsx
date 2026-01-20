@@ -215,6 +215,7 @@ const onContentClickCapture = React.useCallback(
       ) : (
         <div className="text-xs text-white">No external link provided.</div>
       )}
+      {/* Hi */}
 
       {/* Long content (HTML string) */}
       {html ? (
