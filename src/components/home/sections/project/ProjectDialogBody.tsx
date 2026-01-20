@@ -67,34 +67,35 @@ export default function ProjectDialogBody({
   const accentBorder = hexToRgba(accent, 0.85);
 
   // ✅ Lightbox state for embedded images in HTML content
-  const [openImg, setOpenImg] = React.useState(false);
-  const [imgSrc, setImgSrc] = React.useState<string | null>(null);
-  const [imgAlt, setImgAlt] = React.useState<string>("");
+const [openImg, setOpenImg] = React.useState(false);
+const [imgSrc, setImgSrc] = React.useState<string | null>(null);
+const [imgAlt, setImgAlt] = React.useState<string>("");
 
-  const onContentClickCapture = React.useCallback(
+const onContentClickCapture = React.useCallback(
   (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only left click (ignore right click, etc.)
-    if ("button" in e && e.button !== 0) return;
+    // left click only
+    if (e.button !== 0) return;
 
+    const container = e.currentTarget;
     const target = e.target as Element | null;
     if (!target) return;
 
-    // Walk up from the target until the container, searching for an IMG
-    const container = e.currentTarget;
+    // Walk up from click target until container, looking for an <img>
     let el: Element | null = target;
-
     let img: HTMLImageElement | null = null;
+
     while (el && el !== container) {
       if (el.tagName === "IMG") {
         img = el as HTMLImageElement;
         break;
       }
-      // Some editors wrap images in <picture> or <figure>
+
       const found = el.querySelector?.("img");
-      if (found && found instanceof HTMLImageElement) {
+      if (found instanceof HTMLImageElement) {
         img = found;
         break;
       }
+
       el = el.parentElement;
     }
 
@@ -217,32 +218,33 @@ export default function ProjectDialogBody({
 
       {/* Long content (HTML string) */}
       {html ? (
-      <div
-        onClickCapture={onContentClickCapture}
-        className={`
-          prose prose-invert max-w-none
-          prose-headings:text-white
-          prose-p:text-white
-          prose-strong:text-white
-          prose-a:text-white underline decoration-white hover:decoration-white
+        <div
+          onClickCapture={onContentClickCapture}
+          className={`
+            prose prose-invert max-w-none
+            prose-headings:text-white
+            prose-p:text-white
+            prose-strong:text-white
+            prose-a:text-white underline decoration-white hover:decoration-white
 
-          whitespace-pre-wrap wrap-break-words
-          prose-figure:my-4 prose-figcaption:text-white/70
-          [&_br]:block
+            whitespace-pre-wrap wrap-break-words
+            prose-figure:my-4 prose-figcaption:text-white/70
+            [&_br]:block
 
-          /* make embedded images reliably clickable everywhere */
-          [&_img]:cursor-zoom-in
-          [&_img]:pointer-events-auto
-          [&_img]:select-none
-          [&_img]:max-w-full
-          [&_img]:h-auto
-          [&_img]:block
-        `}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-    ) : (
-      <p className="text-white/90 text-sm">More info coming soon.</p>
-    )}
+            /* make embedded images reliably clickable everywhere */
+            [&_img]:cursor-zoom-in
+            [&_img]:pointer-events-auto
+            [&_img]:select-none
+            [&_img]:max-w-full
+            [&_img]:h-auto
+            [&_img]:block
+          `}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      ) : (
+        <p className="text-white/90 text-sm">More info coming soon.</p>
+      )}
+
 
     </div>
   );
