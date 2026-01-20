@@ -71,25 +71,52 @@ export default function ProjectDialogBody({
   const [imgSrc, setImgSrc] = React.useState<string | null>(null);
   const [imgAlt, setImgAlt] = React.useState<string>("");
 
-  const onContentClick = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement | null;
+  const onContentClickCapture = React.useCallback(
+  (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only left click (ignore right click, etc.)
+    if ("button" in e && e.button !== 0) return;
+
+    const target = e.target as Element | null;
     if (!target) return;
 
-    // If user clicks an image (or something inside a picture), find the IMG
-    const img = target.closest?.("img") as HTMLImageElement | null;
+    // Walk up from the target until the container, searching for an IMG
+    const container = e.currentTarget;
+    let el: Element | null = target;
+
+    let img: HTMLImageElement | null = null;
+    while (el && el !== container) {
+      if (el.tagName === "IMG") {
+        img = el as HTMLImageElement;
+        break;
+      }
+      // Some editors wrap images in <picture> or <figure>
+      const found = el.querySelector?.("img");
+      if (found && found instanceof HTMLImageElement) {
+        img = found;
+        break;
+      }
+      el = el.parentElement;
+    }
+
     if (!img) return;
 
-    const src = img.currentSrc || img.src;
+    const src = img.currentSrc || img.getAttribute("src") || "";
     if (!src) return;
 
-    // If the image is wrapped in a link, prevent navigation so we can lightbox it
+    // If wrapped in a link, stop navigation
     const link = img.closest?.("a") as HTMLAnchorElement | null;
-    if (link) e.preventDefault();
+    if (link) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
 
     setImgSrc(src);
     setImgAlt(img.alt || "");
     setOpenImg(true);
-  }, []);
+  },
+  []
+);
+
 
   return (
     <div className="space-y-5">
@@ -190,29 +217,33 @@ export default function ProjectDialogBody({
 
       {/* Long content (HTML string) */}
       {html ? (
-        <div
-          onClick={onContentClick}
-          className={`
-            prose prose-invert max-w-none
-            prose-headings:text-white
-            prose-p:text-white
-            prose-strong:text-white
-            prose-a:text-white underline decoration-white hover:decoration-white
+      <div
+        onClickCapture={onContentClickCapture}
+        className={`
+          prose prose-invert max-w-none
+          prose-headings:text-white
+          prose-p:text-white
+          prose-strong:text-white
+          prose-a:text-white underline decoration-white hover:decoration-white
 
-            whitespace-pre-wrap wrap-break-words
+          whitespace-pre-wrap wrap-break-words
+          prose-figure:my-4 prose-figcaption:text-white/70
+          [&_br]:block
 
-            prose-figure:my-4 prose-figcaption:text-white/70
+          /* make embedded images reliably clickable everywhere */
+          [&_img]:cursor-zoom-in
+          [&_img]:pointer-events-auto
+          [&_img]:select-none
+          [&_img]:max-w-full
+          [&_img]:h-auto
+          [&_img]:block
+        `}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    ) : (
+      <p className="text-white/90 text-sm">More info coming soon.</p>
+    )}
 
-            [&_br]:block
-
-            /* nice affordance: show pointer on images */
-            [&_img]:cursor-zoom-in
-          `}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
-      ) : (
-        <p className="text-white/90 text-sm">More info coming soon.</p>
-      )}
     </div>
   );
 }
