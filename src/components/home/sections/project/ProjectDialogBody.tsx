@@ -1,4 +1,4 @@
-// frontend/src/features/home/components/project/ProjectDialogBody.tsx
+// src/components/home/sections/project/ProjectDialogBody.tsx
 "use client";
 
 import * as React from "react";
@@ -13,7 +13,10 @@ function hexToRgba(input: string, alphaOverride?: number) {
   const raw = (input ?? "").trim();
   if (/^rgba?\(/i.test(raw)) {
     if (alphaOverride == null) return raw;
-    const nums = raw.replace(/[^\d.,]/g, "").split(",").map((x) => Number(x.trim()));
+    const nums = raw
+      .replace(/[^\d.,]/g, "")
+      .split(",")
+      .map((x) => Number(x.trim()));
     if (nums.length >= 3) {
       const [r, g, b] = nums;
       return `rgba(${r}, ${g}, ${b}, ${alphaOverride})`;
@@ -67,61 +70,57 @@ export default function ProjectDialogBody({
   const accentBorder = hexToRgba(accent, 0.85);
 
   // ✅ Lightbox state for embedded images in HTML content
-const [openImg, setOpenImg] = React.useState(false);
-const [imgSrc, setImgSrc] = React.useState<string | null>(null);
-const [imgAlt, setImgAlt] = React.useState<string>("");
+  const [openImg, setOpenImg] = React.useState(false);
+  const [imgSrc, setImgSrc] = React.useState<string | null>(null);
+  const [imgAlt, setImgAlt] = React.useState<string>("");
 
-const onContentClickCapture = React.useCallback(
-  (e: React.MouseEvent<HTMLDivElement>) => {
-    // left click only
-    if (e.button !== 0) return;
+  const onContentClickCapture = React.useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return;
 
-    const container = e.currentTarget;
-    const target = e.target as Element | null;
-    if (!target) return;
+      const container = e.currentTarget;
+      const target = e.target as Element | null;
+      if (!target) return;
 
-    // Walk up from click target until container, looking for an <img>
-    let el: Element | null = target;
-    let img: HTMLImageElement | null = null;
+      let el: Element | null = target;
+      let img: HTMLImageElement | null = null;
 
-    while (el && el !== container) {
-      if (el.tagName === "IMG") {
-        img = el as HTMLImageElement;
-        break;
+      while (el && el !== container) {
+        if (el.tagName === "IMG") {
+          img = el as HTMLImageElement;
+          break;
+        }
+
+        const found = el.querySelector?.("img");
+        if (found instanceof HTMLImageElement) {
+          img = found;
+          break;
+        }
+
+        el = el.parentElement;
       }
 
-      const found = el.querySelector?.("img");
-      if (found instanceof HTMLImageElement) {
-        img = found;
-        break;
+      if (!img) return;
+
+      const src = img.currentSrc || img.getAttribute("src") || "";
+      if (!src) return;
+
+      const link = img.closest?.("a") as HTMLAnchorElement | null;
+      if (link) {
+        e.preventDefault();
+        e.stopPropagation();
       }
 
-      el = el.parentElement;
-    }
-
-    if (!img) return;
-
-    const src = img.currentSrc || img.getAttribute("src") || "";
-    if (!src) return;
-
-    // If wrapped in a link, stop navigation
-    const link = img.closest?.("a") as HTMLAnchorElement | null;
-    if (link) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    setImgSrc(src);
-    setImgAlt(img.alt || "");
-    setOpenImg(true);
-  },
-  []
-);
-
+      setImgSrc(src);
+      setImgAlt(img.alt || "");
+      setOpenImg(true);
+    },
+    []
+  );
 
   return (
     <div className="space-y-5">
-      {/* ✅ Embedded content image viewer */}
+      {/* ✅ Embedded content image viewer (CENTERED modal) */}
       <Dialog
         open={openImg}
         onOpenChange={(v) => {
@@ -132,51 +131,58 @@ const onContentClickCapture = React.useCallback(
           }
         }}
       >
-        {/* If your dialog.tsx supports showCloseButton, disable it here: showCloseButton={false} */}
         <DialogContent
-          // showCloseButton={false}
+          showCloseButton={false}
           className="
-            w-screen h-screen max-w-none
-            p-0 border-0
-            bg-black/90
-            overflow-hidden
-            rounded-none
+            border-0 bg-black/90 p-0 overflow-hidden
+            w-[96vw] max-w-[1100px]
+            max-h-[85vh]
+            rounded-none sm:rounded-2xl
           "
         >
           <DialogTitle className="sr-only">
             {imgAlt ? `Image: ${imgAlt}` : "Image preview"}
           </DialogTitle>
 
-          {/* single close button */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setOpenImg(false)}
-            className="
-              absolute right-4 top-4 z-50
-              rounded-full
-              bg-black/50 hover:bg-black/70
-              text-white
-              ring-1 ring-white/15
-            "
-            aria-label="Close image preview"
-          >
-            <X className="h-5 w-5" />
-          </Button>
+          <div className="relative w-full h-full">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setOpenImg(false)}
+              className="
+                absolute z-50
+                h-11 w-11
+                rounded-full
+                bg-black/55 hover:bg-black/75
+                text-white
+                ring-1 ring-white/15
+                backdrop-blur
+                pointer-events-auto
+                touch-manipulation
+              "
+              style={{
+                top: "calc(env(safe-area-inset-top, 0px) + 12px)",
+                right: "calc(env(safe-area-inset-right, 0px) + 12px)",
+              }}
+              aria-label="Close image preview"
+            >
+              <X className="h-5 w-5" />
+            </Button>
 
-          <div className="relative flex h-full w-full items-center justify-center">
-            {imgSrc ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imgSrc}
-                alt={imgAlt}
-                draggable={false}
-                className="max-h-full max-w-full object-contain select-none"
-              />
-            ) : (
-              <div className="text-white/80 text-sm">No image selected.</div>
-            )}
+            <div className="flex h-full w-full items-center justify-center p-4 sm:p-6">
+              {imgSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imgSrc}
+                  alt={imgAlt}
+                  draggable={false}
+                  className="max-h-[80vh] max-w-full object-contain select-none"
+                />
+              ) : (
+                <div className="text-white/80 text-sm">No image selected.</div>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -215,7 +221,7 @@ const onContentClickCapture = React.useCallback(
       ) : (
         <div className="text-xs text-white">No external link provided.</div>
       )}
-    
+
       {/* Long content (HTML string) */}
       {html ? (
         <div
@@ -231,7 +237,6 @@ const onContentClickCapture = React.useCallback(
             prose-figure:my-4 prose-figcaption:text-white/70
             [&_br]:block
 
-            /* make embedded images reliably clickable everywhere */
             [&_img]:cursor-zoom-in
             [&_img]:pointer-events-auto
             [&_img]:select-none
@@ -244,8 +249,6 @@ const onContentClickCapture = React.useCallback(
       ) : (
         <p className="text-white/90 text-sm">More info coming soon.</p>
       )}
-
-
     </div>
   );
 }
