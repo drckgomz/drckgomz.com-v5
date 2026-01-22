@@ -1,9 +1,10 @@
 // src/app/admin/posts/[slug]/page.tsx
 import { requireAdmin } from "@/lib/admin/requireAdmin";
 import { getAdminPostBySlug } from "@/lib/admin/getAdminPost";
-import ManagePostForm from "@/components/blog/admin/ManagePostForm/ManagePostForm";
+import ManagePostForm from "@/components/blog/admin/posts/ManagePostForm";
 import { Card } from "@/components/ui/card";
 import { notFound } from "next/navigation";
+import { normalizeAdminPost } from "@/lib/admin/types";
 
 export const metadata = { title: "Edit Post" };
 
@@ -14,11 +15,13 @@ export default async function EditPostPage({
 }) {
   await requireAdmin();
 
-  const { slug } = await params; // ✅ Next 16 params is Promise
+  const { slug } = await params;
   const decoded = decodeURIComponent(slug);
 
-  const initialPost = await getAdminPostBySlug(decoded);
-  if (!initialPost) notFound();
+  const initialPostRaw = await getAdminPostBySlug(decoded);
+  if (!initialPostRaw) notFound();
+
+  const initialPost = normalizeAdminPost(initialPostRaw);
 
   return (
     <main className="min-h-dvh bg-black text-white">

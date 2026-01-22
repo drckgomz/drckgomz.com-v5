@@ -1,4 +1,4 @@
-// frontend/src/features/home/components/project/InlineCarousel.tsx
+// src/components/home/sections/project/InlineCarousel.tsx
 "use client";
 
 import * as React from "react";
@@ -75,44 +75,65 @@ export default function InlineCarousel({
 
   return (
     <div className="w-full">
-            {/* Lightbox / fullscreen preview */}
+      {/* Centered lightbox preview */}
       <Dialog open={openPreview} onOpenChange={setOpenPreview}>
         <DialogContent
+          showCloseButton={false}
           className="
-            w-screen h-screen max-w-none
-            p-0
-            border-0
-            bg-black/90
-            overflow-hidden
-            rounded-none
+            border-0 bg-black/90 p-0 overflow-hidden
+            w-[96vw] max-w-[1100px]
+            max-h-[85vh]
+            rounded-none sm:rounded-2xl
           "
         >
-          {/* Accessible title (hidden) */}
           <DialogTitle className="sr-only">
             {cur?.caption ? `Image preview: ${cur.caption}` : "Image preview"}
           </DialogTitle>
 
-          {/* Content */}
-          <div className="relative flex h-full w-full items-center justify-center">
-            {isImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={cur.url}
-                alt={cur.caption || ""}
-                draggable={false}
-                className="
-                  max-h-full max-w-full
-                  object-contain
-                  select-none
-                "
-              />
-            ) : (
-              <div className="grid h-full w-full place-items-center text-white/80 text-sm p-4">
-                Preview only available for images.
-              </div>
-            )}
+          {/* Positioning context */}
+          <div className="relative w-full h-full">
+            {/* Close button (safe-area aware) */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setOpenPreview(false)}
+              className="
+                absolute z-50
+                h-11 w-11
+                rounded-full
+                bg-black/55 hover:bg-black/75
+                text-white
+                ring-1 ring-white/15
+                backdrop-blur
+                pointer-events-auto
+                touch-manipulation
+              "
+              style={{
+                top: "calc(env(safe-area-inset-top, 0px) + 12px)",
+                right: "calc(env(safe-area-inset-right, 0px) + 12px)",
+              }}
+              aria-label="Close image preview"
+            >
+              <X className="h-5 w-5" />
+            </Button>
 
-            {/* optional caption */}
+            <div className="flex h-full w-full items-center justify-center p-4 sm:p-6">
+              {isImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={cur.url}
+                  alt={cur.caption || ""}
+                  draggable={false}
+                  className="max-h-[80vh] max-w-full object-contain select-none"
+                />
+              ) : (
+                <div className="grid h-full w-full place-items-center text-white/80 text-sm p-4">
+                  Preview only available for images.
+                </div>
+              )}
+            </div>
+
             {cur?.caption ? (
               <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
                 <div className="mx-auto w-fit max-w-[95%] rounded-md bg-black/55 px-3 py-1 text-xs text-white/90 ring-1 ring-white/10">
@@ -121,18 +142,16 @@ export default function InlineCarousel({
               </div>
             ) : null}
           </div>
-
-
         </DialogContent>
       </Dialog>
-
 
       {/* Outer frame */}
       <div
         className="w-full rounded-lg border bg-black/20 overflow-hidden"
         style={{
           borderColor: "rgba(255,255,255,0.10)",
-          boxShadow: `0 0 0 1px rgba(255,255,255,0.06), 0 18px 40px rgba(0,0,0,0.35)`,
+          boxShadow:
+            "0 0 0 1px rgba(255,255,255,0.06), 0 18px 40px rgba(0,0,0,0.35)",
         }}
       >
         <div className="mx-auto aspect-video max-h-[60vh] w-full">
@@ -162,7 +181,11 @@ export default function InlineCarousel({
           ) : cur.type === "youtube" ? (
             <iframe
               className="h-full w-full"
-              src={cur.url.includes("embed") ? cur.url : cur.url.replace("watch?v=", "embed/")}
+              src={
+                cur.url.includes("embed")
+                  ? cur.url
+                  : cur.url.replace("watch?v=", "embed/")
+              }
               title={cur.caption || "YouTube"}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -184,7 +207,8 @@ export default function InlineCarousel({
               style={{ border: "1px solid rgba(255,255,255,0.20)" }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 0 1px ${accentBorder}, 0 0 18px ${accentGlow}`;
-                (e.currentTarget as HTMLButtonElement).style.borderColor = accentBorder;
+                (e.currentTarget as HTMLButtonElement).style.borderColor =
+                  accentBorder;
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.boxShadow = "";
@@ -211,7 +235,8 @@ export default function InlineCarousel({
               style={{ border: "1px solid rgba(255,255,255,0.20)" }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 0 1px ${accentBorder}, 0 0 18px ${accentGlow}`;
-                (e.currentTarget as HTMLButtonElement).style.borderColor = accentBorder;
+                (e.currentTarget as HTMLButtonElement).style.borderColor =
+                  accentBorder;
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.boxShadow = "";
@@ -245,7 +270,11 @@ export default function InlineCarousel({
                 >
                   {m.type === "image" ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.url} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={m.url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <div className="grid h-full w-full place-items-center text-[10px] text-white/80">
                       {m.type}
