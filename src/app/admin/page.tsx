@@ -1,6 +1,9 @@
 // src/app/admin/page.tsx
 import Link from "next/link";
 import { requireAdmin } from "@/lib/profile/requireAdmin";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 
 const baseBtn =
   "block w-full px-6 py-4 rounded-lg text-center font-semibold text-white " +
