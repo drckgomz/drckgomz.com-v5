@@ -88,7 +88,7 @@ function normalizePost(raw: any): Post {
       // ✅ id REQUIRED by render.MediaItem
       id: String(m.id ?? `${raw.id ?? raw.slug ?? "post"}:${idx}`),
       type: coerceMediaType(m.type),
-      url: String(m.url || ""),
+      url: resolveUrl(String(m.url || "")),
       caption: m.caption ?? null,
       title: m.title ?? null,
     }));
@@ -115,7 +115,7 @@ function normalizePost(raw: any): Post {
     date: raw.date ?? null,
     created_at,
     updated_at: raw.updated_at ?? null,
-    thumbnail_url: raw.thumbnail_url ?? null,
+    thumbnail_url: raw.thumbnail_url ? resolveUrl(raw.thumbnail_url) : null,
     media,
   };
 }
@@ -291,7 +291,7 @@ export default function BlogView({ slug }: { slug: string }) {
 
             <Separator className="bg-white/10" />
 
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 text-white">
               <BlogContent content={post.content || ""} media={renderMedia} />
             </CardContent>
           </Card>

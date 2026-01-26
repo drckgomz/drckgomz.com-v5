@@ -107,19 +107,48 @@ export default function MediaList({
     const newCaption: string | null = clean.length ? clean : null;
 
     const before = mediaList;
-    const next = before.map((m) => (m.id === id ? { ...m, caption: newCaption } : m));
+    const next: NormalizedMedia[] = before.map((m) =>
+      m.id === id ? { ...m, caption: newCaption } : m
+    );
     setMediaList(next);
 
     try {
-      // If you already persist captions server-side elsewhere, keep that there.
-      // If not, this is where you’d call it.
-      const updated = next.find((x) => x.id === id);
-      if (updated && onCaptionChange) onCaptionChange(updated, newCaption);
+      const res = await fetch(`/api/admin/media/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ caption: newCaption }),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(txt || "Failed to save caption");
+      }
+
+      const json = await res.json().catch(() => ({}));
+      const saved = json?.media;
+
+      if (saved && typeof saved === "object") {
+        const canonicalCaption =
+          saved.caption === null || saved.caption === undefined ? null : String(saved.caption);
+
+        const patched: NormalizedMedia[] = next.map((m) =>
+          m.id === id ? { ...m, caption: canonicalCaption } : m
+        );
+        setMediaList(patched);
+
+        const updated = patched.find((x) => x.id === id);
+        if (updated && onCaptionChange) onCaptionChange(updated, canonicalCaption);
+      } else {
+        const updated = next.find((x) => x.id === id);
+        if (updated && onCaptionChange) onCaptionChange(updated, newCaption);
+      }
 
       setEditingId(null);
       setDraft("");
-    } catch {
+    } catch (e) {
+      console.warn(e);
       setMediaList(before);
+      alert("Failed to save caption.");
     } finally {
       setSavingId(null);
     }
@@ -132,18 +161,12 @@ export default function MediaList({
 
   return (
     <section className="space-y-3">
-      <div>
-        <h2 className="text-sm font-semibold text-foreground">Media</h2>
-        <p className="text-[11px] text-muted-foreground">
-          Attach media and insert placeholders into the post content.
-        </p>
-      </div>
-
+      {/* Actions */}
       <div className="grid gap-2">
         <Button
           type="button"
           variant="secondary"
-          className="w-full"
+          className="w-full bg-white/5 text-white border border-white/25 hover:bg-white hover:text-black"
           onClick={async () => {
             const url = prompt("Enter YouTube or Instagram URL:");
             if (url) onAddLink(url, () => {});
@@ -152,7 +175,7 @@ export default function MediaList({
           + Add YouTube / Instagram
         </Button>
 
-        <Button type="button" className="w-full" onClick={pickFile}>
+        <Button type="button" className="w-full bg-white/5 border border-white/25 hover:bg-white hover:text-black" onClick={pickFile}>
           Upload image
         </Button>
 
@@ -166,6 +189,7 @@ export default function MediaList({
         />
       </div>
 
+      {/* Dropzone (Editor-like surface) */}
       <div
         onDrop={onDrop}
         onDragOver={(e) => {
@@ -175,9 +199,9 @@ export default function MediaList({
         onDragLeave={() => setDropping(false)}
         className={cn(
           "rounded-xl border border-dashed p-3 text-xs transition-colors",
-          dropping
-            ? "border-primary/50 bg-primary/5 text-foreground"
-            : "border-border bg-muted/30 text-muted-foreground"
+          "border-border bg-white/5 text-white/50",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          dropping && "border-ring bg-muted/20 text-white"
         )}
       >
         Drag &amp; drop an image here
@@ -185,8 +209,9 @@ export default function MediaList({
 
       <Separator />
 
+      {/* Empty state */}
       {mediaList.length === 0 ? (
-        <div className="rounded-xl border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+        <div className="rounded-xl border border-border bg-background p-3 text-xs text-muted-foreground shadow-sm">
           No media yet.
         </div>
       ) : (
@@ -217,8 +242,8 @@ export default function MediaList({
               <div
                 key={m.id}
                 className={cn(
-                  "flex items-start gap-3 rounded-xl border border-border bg-background p-3 shadow-sm",
-                  "hover:bg-muted/20"
+                  "flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-3 shadow-sm",
+                  "transition-colors hover:border-white/25"
                 )}
               >
                 {thumb ? (
@@ -236,45 +261,42 @@ export default function MediaList({
                 )}
 
                 <div className="min-w-0 flex-1 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <div className="min-w-0 flex-1">
-                      {isEditing ? (
-                        <Input
-                          autoFocus
-                          value={draft}
-                          onChange={(e) => setDraft(e.target.value)}
-                          onBlur={commit}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") commit();
-                            if (e.key === "Escape") cancelEdit();
-                          }}
-                          disabled={savingId === m.id}
-                          className="h-8 text-xs"
-                          placeholder="Caption…"
-                        />
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => startEdit(m)}
-                          className="block w-full truncate text-left text-xs font-medium text-foreground hover:underline"
-                          title="Click to edit caption"
-                        >
-                          {display}
-                        </button>
-                      )}
+                  <div className="min-w-0">
+                    {isEditing ? (
+                      <Input
+                        autoFocus
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        onBlur={commit}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commit();
+                          if (e.key === "Escape") cancelEdit();
+                        }}
+                        disabled={savingId === m.id}
+                        className="h-8 text-xs text-white"
+                        placeholder="Caption…"
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => startEdit(m)}
+                        className="block w-full truncate text-left text-xs text-white font-medium hover:underline"
+                        title="Click to edit caption"
+                      >
+                        {display}
+                      </button>
+                    )}
 
-                      <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-                        {m.type !== "image" ? (
-                          <span className="uppercase tracking-wide">{m.type}</span>
-                        ) : (
-                          <span className="uppercase tracking-wide">image</span>
-                        )}
-                        {isThumb ? (
-                          <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-amber-600 dark:text-amber-300 ring-1 ring-amber-500/20">
-                            Thumbnail
-                          </span>
-                        ) : null}
-                      </div>
+                    <div className="mt-1 flex items-center gap-2 text-[10px] text-white/70">
+                      <span className="uppercase tracking-wide">
+                        {m.type === "image" ? "image" : m.type}
+                      </span>
+
+                      {isThumb ? (
+                        <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-amber-700 ring-1 ring-amber-500/20 dark:text-amber-300">
+                          Thumbnail
+                        </span>
+                      ) : null}
                     </div>
                   </div>
 
@@ -283,21 +305,11 @@ export default function MediaList({
                       type="button"
                       variant="secondary"
                       size="sm"
-                      className="h-7 px-2 text-xs"
+                      className="h-7 px-2 text-xs border hover:text-white hover:bg-black"
                       onClick={() => onInsert(m.id)}
                       disabled={!!savingId}
                     >
                       Insert
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="h-7 px-2 text-xs"
-                      onClick={() => onRemove(m.id)}
-                    >
-                      Remove
                     </Button>
 
                     {!isThumb && onSetThumbnail ? (
@@ -305,13 +317,23 @@ export default function MediaList({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-7 px-2 text-xs"
+                        className="h-7 px-2 text-xs hover:text-white hover:bg-black"
                         onClick={() => onSetThumbnail({ id: m.id, url: m.url })}
                         title="Use as post thumbnail"
                       >
                         Make thumbnail
                       </Button>
                     ) : null}
+
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="h-7 px-2 text-xs border border-transparent hover:bg-red-800 hover:border-red-500"
+                      onClick={() => onRemove(m.id)}
+                    >
+                      Remove
+                    </Button>
                   </div>
                 </div>
               </div>

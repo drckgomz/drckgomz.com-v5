@@ -123,17 +123,14 @@ export default function EditPostForm({ initialPost }: { initialPost: AdminPost }
       return;
     }
 
-    const res = await fetch(
-      `/api/admin/posts/${encodeURIComponent(initialPost.slug)}/media/link`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          type: detectMediaType(clean),
-          url: clean,
-        }),
-      }
-    );
+    const res = await fetch(`/api/admin/posts/${encodeURIComponent(initialPost.slug)}/media/link`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        type: detectMediaType(clean),
+        url: clean,
+      }),
+    });
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -176,10 +173,10 @@ export default function EditPostForm({ initialPost }: { initialPost: AdminPost }
     const fd = new FormData();
     fd.append("file", file);
 
-    const res = await fetch(
-      `/api/admin/posts/${encodeURIComponent(initialPost.slug)}/media/upload`,
-      { method: "POST", body: fd }
-    );
+    const res = await fetch(`/api/admin/posts/${encodeURIComponent(initialPost.slug)}/media/upload`, {
+      method: "POST",
+      body: fd,
+    });
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -226,109 +223,168 @@ export default function EditPostForm({ initialPost }: { initialPost: AdminPost }
 
   return (
     <div className="space-y-6">
-      {err ? <p className="text-sm text-destructive">{err}</p> : null}
+      {err ? (
+        <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-destructive">
+          {err}
+        </div>
+      ) : null}
 
+      {/* Top fields */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Title</Label>
-          <Input value={editor.title} onChange={(e) => editor.setTitle(e.target.value)} />
+          <Label className="text-xs font-medium text-white/80">Title</Label>
+          <Input
+            value={editor.title}
+            onChange={(e) => editor.setTitle(e.target.value)}
+            placeholder="Post title…"
+            className="border-white/10 bg-white/5 text-white placeholder:text-white/40"
+          />
         </div>
 
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Slug</Label>
+          <Label className="text-xs font-medium text-white/80">Slug</Label>
           <Input
             value={editor.slug}
             onChange={(e) => slugHandlers.onChange(e.target.value)}
             onBlur={slugHandlers.onBlur}
             onKeyDown={slugHandlers.onKeyDown}
+            placeholder="post-slug"
+            className="border-white/10 bg-white/5 text-white placeholder:text-white/40"
           />
-          <p className="text-[10px] text-muted-foreground">
-            URL: <span className="font-mono">/blog/{editor.slug || "your-slug"}</span>
+          <p className="text-[11px] text-white/50">
+            URL: <span className="font-mono text-white/70">/blog/{editor.slug || "your-slug"}</span>
           </p>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Excerpt</Label>
-        <Textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} />
+        <Label className="text-xs font-medium text-white/80">Excerpt</Label>
+        <Textarea
+          value={excerpt}
+          onChange={(e) => setExcerpt(e.target.value)}
+          rows={4}
+          placeholder="Short summary for the blog feed…"
+          className="border-white/10 bg-white/5 text-white placeholder:text-white/40"
+        />
+        <p className="text-[11px] text-white/50">Tip: 1–2 sentences reads best.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Status</Label>
+          <Label className="text-xs font-medium text-white/80">Status</Label>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as PostStatus)}
-            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            className={[
+              "h-10 w-full rounded-md px-3 text-sm",
+              "border border-white/10 bg-white/5 text-white",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
+            ].join(" ")}
           >
             <option value="draft">draft</option>
             <option value="private">private</option>
             <option value="public">public</option>
             <option value="archived">archived</option>
           </select>
+          <p className="text-[11px] text-white/50">This controls visibility on your public blog.</p>
         </div>
 
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Thumbnail URL</Label>
+          <Label className="text-xs font-medium text-white/80">Thumbnail URL</Label>
           <Input
             value={thumbnailUrl}
             onChange={(e) => setThumbnailUrl(e.target.value)}
             placeholder="https://..."
+            className="border-white/10 bg-white/5 text-white placeholder:text-white/40"
           />
-          <p className="text-[10px] text-muted-foreground">
-            Tip: you can also click <span className="font-medium">Make thumbnail</span> on a media
-            item.
+          <p className="text-[11px] text-white/50">
+            Tip: you can also click <span className="font-medium text-white/70">Make thumbnail</span>{" "}
+            on a media item.
           </p>
         </div>
       </div>
 
-      <Separator />
+      <Separator className="bg-white/10" />
 
-      <div className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Content</Label>
+      {/* Editor + media (aligned) */}
+      <div className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)] md:items-start">
+        {/* Left column: keep label + editor in a "row" so the top aligns with the media card */}
+        <div className="grid gap-2">
+          <div className="flex h-7 items-end">
+            <Label className="text-xs font-medium text-white/80">Content</Label>
+          </div>
+
           <Editor
             ref={editor.editorRef}
             value={editor.content}
             onChange={editor.setContent}
             className={[
-              "min-h-[420px] rounded-lg border border-border bg-background/40",
-              "px-3 py-2 text-sm text-foreground",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "min-h-[460px] rounded-lg border border-white/10 bg-white/5",
+              "px-3 py-2 text-sm text-white",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
             ].join(" ")}
           />
+
+          <p className="text-[11px] text-white/50">
+            Use the Media panel to insert placeholders into the editor.
+          </p>
         </div>
 
-        <div className="space-y-3">
-          <MediaList
-            postId={initialPost.id}
-            mediaList={editor.mediaList as any}
-            setMediaList={(lst) => {
-              editor.setMediaList(lst as any);
-              queueSave(lst.map((m) => ({ id: m.id })));
-            }}
-            onInsert={(id) => {
-              const m = editor.mediaList.find((x) => x.id === id);
-              if (m) editor.insertPlaceholder(m as any);
-            }}
-            onRemove={onRemoveMedia}
-            onUpload={onUpload}
-            onAddLink={onAddLink}
-            onCaptionChange={editor.updateCaptionInEditor}
-            thumbnailUrl={thumbnailUrl || null}
-            onSetThumbnail={onSetThumbnail}
-            onReorderSave={(ordered) => queueSave(ordered)}
-          />
+        {/* Right column: match the label row height so the card top lines up with the editor top */}
+        <div className="grid gap-2">
+          <div className="flex h-7 items-end">
+            <p className="text-xs font-medium text-white/80">Media</p>
+          </div>
+
+          <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[11px] text-white/50">Drag to reorder</p>
+              <div className="h-4" />
+            </div>
+
+            <MediaList
+              postId={initialPost.id}
+              mediaList={editor.mediaList as any}
+              setMediaList={(lst) => {
+                editor.setMediaList(lst as any);
+                queueSave(lst.map((m) => ({ id: m.id })));
+              }}
+              onInsert={(id) => {
+                const m = editor.mediaList.find((x) => x.id === id);
+                if (m) editor.insertPlaceholder(m as any);
+              }}
+              onRemove={onRemoveMedia}
+              onUpload={onUpload}
+              onAddLink={onAddLink}
+              onCaptionChange={editor.updateCaptionInEditor}
+              thumbnailUrl={thumbnailUrl || null}
+              onSetThumbnail={onSetThumbnail}
+              onReorderSave={(ordered) => queueSave(ordered)}
+            />
+          </div>
         </div>
       </div>
 
-      <Separator />
+      <Separator className="bg-white/10" />
 
-      <div className="flex flex-wrap gap-2 justify-end">
-        <Button type="button" variant="ghost" onClick={() => router.back()} disabled={saving}>
+      {/* Actions */}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
+        <Button
+          type="button"
+          variant="ghost"
+          className="bg-white/25 text-white hover:bg-white hover:text-black"
+          onClick={() => router.back()}
+          disabled={saving}
+        >
           Cancel
         </Button>
-        <Button type="button" onClick={onSave} disabled={saving}>
+
+        <Button
+          type="button"
+          className="bg-white/25 hover:bg-white hover:text-black"
+          onClick={onSave}
+          disabled={saving}
+        >
           {saving ? "Saving…" : "Save"}
         </Button>
       </div>

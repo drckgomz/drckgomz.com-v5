@@ -157,8 +157,10 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
       // placeholder chip (theme-friendly)
       const span = document.createElement("span");
       span.className =
-        "media-placeholder inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 " +
-        "text-primary ring-1 ring-primary/20 font-medium";
+        "media-placeholder inline-flex items-center rounded-md " +
+        "bg-cyan-500/10 px-1.5 py-0.5 " +
+        "text-cyan-300 ring-1 ring-cyan-400/30 " +
+        "font-semibold tracking-wide";
       span.textContent = text;
 
       // zero-width space so caret can move past the chip

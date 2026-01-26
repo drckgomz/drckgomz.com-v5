@@ -5,6 +5,7 @@ import EditPostForm from "@/components/admin/posts/EditPostForm";
 import { Card } from "@/components/ui/card";
 import { notFound } from "next/navigation";
 import { normalizeAdminPost } from "@/lib/admin/types";
+import { BackButton } from "@/components/blog/BackButton";
 
 export const metadata = { title: "Edit Post" };
 
@@ -27,7 +28,12 @@ export default async function EditPostPage({
     <main className="min-h-dvh bg-black text-white">
       <div className="pt-5 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-6xl">
-          <h1 className="text-3xl font-bold mb-6">Edit Post</h1>
+          <div className="mb-6 flex items-center justify-between gap-3">
+            <BackButton fallbackHref="/admin/posts" />
+            <h1 className="text-3xl text-center font-bold flex-1">Edit Post</h1>
+            {/* spacer to keep title centered */}
+            <div className="w-[88px]" />
+          </div>
 
           <Card className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-6">
             <EditPostForm initialPost={initialPost} />

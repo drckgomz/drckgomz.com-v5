@@ -1,8 +1,9 @@
-// src/components/blog/admin/posts/ManagePostsPage.tsx
+// src/components/admin/posts/ManagePostsPage.tsx
 "use client";
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+
 import PostRow from "@/components/admin/posts/PostRow";
 import { usePosts } from "@/components/admin/posts/usePosts";
 import { TABS, type Tab } from "@/components/admin/posts/types";
@@ -11,54 +12,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-// If you already have an admin navbar in v5, swap this import.
-// You currently have blog Navbar components under src/components/blog/...
-import NavbarClientShell from "@/components/blog/NavbarClientShell";
+import { cn } from "@/lib/utils/utils";
 
 type MediaItem = { type?: string | null; url?: string | null; idx?: number | null };
 
 function extractYouTubeId(url: string): string | undefined {
   const m =
-    url.match(/(?:youtube\.com\/(?:watch\?.*v=|embed\/|shorts\/)|youtu\.be\/)([0-9A-Za-z_-]{11})/) ||
-    url.match(/[?&]v=([0-9A-Za-z_-]{11})/);
-
-  if (m?.[1]) return m[1];
-
-  try {
-    const u = new URL(url);
-    const v = u.searchParams.get("v");
-    if (v && v.length >= 11) return v;
-
-    const last = u.pathname.split("/").filter(Boolean).pop();
-    if (last && last.length >= 11) return last;
-  } catch {}
-
-  return undefined;
+    url.match(
+      /(?:youtube\.com\/(?:watch\?.*v=|embed\/|shorts\/)|youtu\.be\/)([0-9A-Za-z_-]{11})/
+    ) || url.match(/[?&]v=([0-9A-Za-z_-]{11})/);
+  return m?.[1];
 }
 
 function topMediaThumb(media?: MediaItem[] | null, fallback?: string | null) {
   const list = Array.isArray(media) ? media : [];
-
-  // Respect idx ordering if present
   const sorted = [...list].sort((a, b) => (a?.idx ?? 0) - (b?.idx ?? 0));
-
   const first = sorted[0];
   const type = (first?.type ?? "").toLowerCase();
   const url = first?.url ?? "";
 
   if (type === "image" && url) return url;
-
   if (type === "youtube" && url) {
     const id = extractYouTubeId(url);
     if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
   }
-
-  // Optional: if you store instagram type, you’ll need your own thumbnail strategy
-
   return fallback || "/logo192.png";
 }
-
 
 export default function ManagePostsPage() {
   const router = useRouter();
@@ -89,102 +68,134 @@ export default function ManagePostsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <NavbarClientShell profile={null} />
-
-      <main className="container mx-auto px-4 pt-24 pb-10">
-        <Card className="border-border bg-background/60 backdrop-blur">
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="text-xl sm:text-2xl font-semibold">
-                Manage posts
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
+    <main className="min-h-dvh bg-black text-white">
+      <div className="pt-5 pb-12 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-6xl">
+          {/* Header row (matches Edit Post page vibe) */}
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-3xl font-bold">Manage Posts</h1>
+              <p className="mt-1 text-xs text-white/60">
                 Filter, search, and update the status of your blog posts.
-              </CardDescription>
+              </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 justify-end">
-              <Button type="button" variant="outline" size="sm" onClick={fetchPosts}>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="bg-white/5 text-white border border-white/25 hover:bg-white hover:text-black"
+                onClick={fetchPosts}
+              >
                 Refresh
               </Button>
 
-              <Button type="button" size="sm" onClick={() => router.push("/admin/posts/new")}>
+              <Button
+                type="button"
+                className="bg-white/5 text-white border border-white/25 hover:bg-white hover:text-black"
+                onClick={() => router.push("/admin/posts/new")}
+              >
                 + New post
               </Button>
 
-              <Button type="button" variant="ghost" size="sm" onClick={() => router.back()}>
+              <Button
+                type="button"
+                variant="secondary"
+                className="bg-white/5 text-white border border-white/25 hover:bg-white hover:text-black"
+                onClick={() => router.back()}
+              >
                 ← Back
               </Button>
             </div>
-          </CardHeader>
+          </div>
 
-          <Separator className="bg-border/60" />
+          {/* Main surface card (same as EditPostPage Card) */}
+          <Card className="rounded-2xl border border-white/10 bg-white/5">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold text-white">
+                Posts
+              </CardTitle>
+              <CardDescription className="text-xs text-white/60">
+                Choose a tab, search, then edit or change status.
+              </CardDescription>
+            </CardHeader>
 
-          <CardContent className="pt-4">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-              {/* Tabs (simple, no shadcn Tabs needed unless you want it) */}
-              <div className="flex w-full sm:w-auto gap-1 rounded-lg border border-border bg-background/50 p-1">
-                {TABS.map((t) => {
-                  const active = tab === t;
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setTab(t as Tab)}
-                      className={[
-                        "px-3 py-1.5 text-xs sm:text-[13px] capitalize rounded-md transition-colors",
-                        active
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
-                      ].join(" ")}
-                    >
-                      {t}
-                    </button>
-                  );
-                })}
+            <Separator className="bg-white/10" />
+
+            <CardContent className="pt-4">
+              {/* Tabs + search row */}
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex w-full sm:w-auto gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
+                  {TABS.map((t) => {
+                    const active = tab === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setTab(t as Tab)}
+                        className={cn(
+                          "px-3 py-1.5 text-xs capitalize rounded-lg transition-colors",
+                          active
+                            ? "bg-white text-black"
+                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                        )}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="w-full sm:w-[360px]">
+                  <Input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search title, slug, excerpt…"
+                    className={cn(
+                      "h-9 text-sm",
+                      "bg-white/5 border border-white/10 text-white",
+                      "placeholder:text-white/40",
+                      "focus-visible:ring-2 focus-visible:ring-ring"
+                    )}
+                  />
+                </div>
               </div>
 
-              <div className="flex-1 flex justify-end">
-                <Input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Search title, slug, excerpt…"
-                  className="w-full sm:w-80 text-sm"
-                />
+              {error ? (
+                <div className="mb-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                  error: {error}
+                </div>
+              ) : null}
+
+              {/* List surface (matches editor/media list cards) */}
+              <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+                {loading ? (
+                  <div className="px-4 py-6 text-sm text-white/60">Loading…</div>
+                ) : rows.length === 0 ? (
+                  <div className="px-4 py-6 text-sm text-white/60">No posts found.</div>
+                ) : (
+                  <ul className="divide-y divide-white/10">
+                    {rows.map((p: any) => (
+                      <PostRow
+                        key={p.id}
+                        post={p}
+                        thumbUrl={p.__thumb}
+                        onMakePublic={makePublic}
+                        onMakePrivate={makePrivate}
+                        onMakeDraft={makeDraft}
+                        onArchive={archive}
+                        onUnarchive={unarchive}
+                        onDelete={del}
+                        editHref={(slug) => `/admin/posts/${slug}`}
+                      />
+                    ))}
+                  </ul>
+                )}
               </div>
-            </div>
-
-            {error && <p className="mb-3 text-xs text-destructive">error: {error}</p>}
-
-            <div className="rounded-xl border border-border/80 bg-background/60">
-              {loading ? (
-                <div className="px-4 py-6 text-sm text-muted-foreground">Loading…</div>
-              ) : rows.length === 0 ? (
-                <div className="px-4 py-6 text-sm text-muted-foreground">No posts found.</div>
-              ) : (
-                <ul className="divide-y divide-border/70">
-                  {rows.map((p: any) => (
-                    <PostRow
-                      key={p.id}
-                      post={p}
-                      thumbUrl={p.__thumb}
-                      onMakePublic={makePublic}
-                      onMakePrivate={makePrivate}
-                      onMakeDraft={makeDraft}
-                      onArchive={archive}
-                      onUnarchive={unarchive}
-                      onDelete={del}
-                      // v5 edit route (adjust to match your actual edit page)
-                      editHref={(slug) => `/admin/posts/${slug}`}
-                    />
-                  ))}
-                </ul>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </main>
   );
 }

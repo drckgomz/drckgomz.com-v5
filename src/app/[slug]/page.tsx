@@ -1,4 +1,4 @@
-// src/app/projects/[slug]/page.tsx
+// src/app/[slug]/page.tsx
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
