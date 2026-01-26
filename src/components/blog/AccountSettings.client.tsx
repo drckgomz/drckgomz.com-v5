@@ -195,7 +195,7 @@ export default function AccountSettingsClient({ initialProfile }: Props) {
           </div>
         </CardContent>
 
-        <CardFooter className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+        <CardFooter className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-3">
           <div className="flex gap-2 justify-end w-full sm:w-auto">
             <Button
               type="button"

@@ -66,7 +66,7 @@ export default function PostRow({
 
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-semibold">
+            <span className="truncate text-sm font-semibold text-white">
               {p.title || p.slug}
             </span>
             <StatusBadge status={p.status} />
@@ -91,12 +91,22 @@ export default function PostRow({
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs">
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-7 px-2 text-white border-2 border-white text-[11px] hover:bg-white hover:text-black"
+          onClick={() => router.push(editHref(p.slug))}
+        >
+          Edit
+        </Button>
+
         {p.status !== "public" && (
           <Button
             type="button"
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[11px] border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10"
+            className="h-7 px-2 text-[11px] bg-white/5 border-2 border-emerald-600 text-emerald-300 hover:bg-emerald-600 hover:text-white"
             onClick={() => onMakePublic(p.slug)}
           >
             Make public
@@ -108,7 +118,7 @@ export default function PostRow({
             type="button"
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[11px] border-blue-500/40 text-blue-300 hover:bg-blue-500/10"
+            className="h-7 px-2 text-[11px] bg-white/5 border-2 border-blue-500 text-blue-300 hover:bg-blue-600 hover:text-white"
             onClick={() => onMakePrivate(p.slug)}
           >
             Make private
@@ -120,7 +130,7 @@ export default function PostRow({
             type="button"
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[11px] border-muted-foreground/40 text-muted-foreground hover:bg-muted/20"
+            className="h-7 px-2 text-[11px] bg-white/5 text-purple-300 border-2 border-purple-500 hover:bg-purple-500 hover:text-white"
             onClick={() => onMakeDraft(p.slug)}
           >
             Move to draft
@@ -132,7 +142,7 @@ export default function PostRow({
             type="button"
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[11px] border-amber-500/40 text-amber-300 hover:bg-amber-500/10"
+            className="h-7 px-2 text-[11px] bg-white/5 border-2 border-amber-600 text-amber-300 hover:bg-amber-500 hover:text-white"
             onClick={() => onArchive(p.slug)}
           >
             Archive
@@ -142,28 +152,19 @@ export default function PostRow({
             type="button"
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[11px] border-amber-500/40 text-amber-200 hover:bg-amber-500/10"
+            className="h-7 px-2 text-[11px] bg-white/5 border-2 border-amber-600 text-amber-300 hover:bg-amber-600 hover:text-white"
             onClick={() => onUnarchive(p.slug)}
           >
             Unarchive
           </Button>
         )}
 
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          className="h-7 px-2 text-[11px] hover:bg-muted/40"
-          onClick={() => router.push(editHref(p.slug))}
-        >
-          Edit
-        </Button>
 
         <Button
           type="button"
           size="sm"
           variant="destructive"
-          className="h-7 px-2 text-[11px] bg-destructive/90 hover:bg-destructive"
+          className="h-7 px-2 text-[11px] bg-destructive/90 hover:bg-white hover:text-red-600"
           onClick={() => onDelete(p.slug)}
         >
           Delete

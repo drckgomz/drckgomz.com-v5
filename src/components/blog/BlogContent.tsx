@@ -28,7 +28,7 @@ export default function BlogContent({
   // 2) sanitize it
   const sanitizedHtml: string = React.useMemo(() => {
     const s = DOMPurify.sanitize(unsafeHtml, {
-      ADD_TAGS: ["iframe", "blockquote"],
+      ADD_TAGS: ["iframe", "blockquote", "span"],
       ADD_ATTR: [
         "allow",
         "allowfullscreen",
@@ -41,10 +41,14 @@ export default function BlogContent({
         "src",
         "class",
         "style",
+        "target",
+        "rel",
+        "alt",
       ],
       FORBID_TAGS: ["script"],
       ALLOWED_URI_REGEXP: /^(?:(?:(?:https?:)?\/\/)|data:image\/|mailto:)/i,
     });
+
     DBG("sanitizedHtmlPreview", s.slice(0, 500));
     return s;
   }, [unsafeHtml]);
@@ -72,7 +76,12 @@ export default function BlogContent({
 
   return (
     <div
-      className="text-white text-lg space-y-0 whitespace-pre-wrap"
+      className={[
+        "prose prose-invert max-w-none",
+        "prose-p:my-3 prose-br:leading-6",
+        "prose-img:rounded-lg",
+        "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
+      ].join(" ")}
       dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
     />
   );
