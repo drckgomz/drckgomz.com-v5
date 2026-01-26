@@ -1,4 +1,7 @@
 // src/app/settings/page.tsx
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import "server-only";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/blog/Navbar";

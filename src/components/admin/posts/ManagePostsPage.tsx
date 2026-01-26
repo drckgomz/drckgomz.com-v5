@@ -3,9 +3,9 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import PostRow from "./PostRow";
-import { usePosts } from "./usePosts";
-import { TABS, type Tab } from "./types";
+import PostRow from "@/components/admin/posts/PostRow";
+import { usePosts } from "@/components/admin/posts/usePosts";
+import { TABS, type Tab } from "@/components/admin/posts/types";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";

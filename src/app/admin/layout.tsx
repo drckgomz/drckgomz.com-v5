@@ -1,4 +1,7 @@
 // src/app/admin/layout.tsx
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import type { ReactNode } from "react";
 import Navbar from "@/components/blog/Navbar";
 import BlogFooter from "@/components/blog/BlogFooter";
