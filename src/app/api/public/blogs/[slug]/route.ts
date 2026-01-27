@@ -1,6 +1,7 @@
 // src/app/api/public/blogs/[slug]/route.ts
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { normalizeMaybeS3Url } from "@/lib/blog/media";
 
 const POSTS_TABLE = "posts";
 
@@ -11,14 +12,6 @@ function getSupabaseAdmin() {
   return createClient(url, serviceRole, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-}
-
-function normalizeMaybeS3Url(u: string | null) {
-  if (!u) return u;
-  if (u.startsWith("http://") || u.startsWith("https://") || u.startsWith("data:")) return u;
-  const base = process.env.NEXT_PUBLIC_S3_MEDIA_BASE || "";
-  if (!base) return u;
-  return `${base.replace(/\/+$/, "")}/${u.replace(/^\/+/, "")}`;
 }
 
 export async function GET(

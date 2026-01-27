@@ -18,13 +18,17 @@ function getSupabaseAdmin() {
 }
 
 function normalizeMaybeS3Url(u: string | null) {
-  if (!u) return u;
-  if (u.startsWith("http://") || u.startsWith("https://") || u.startsWith("data:")) return u;
+  const val = (u ?? "").trim();
+  if (!val) return val as any;
 
-  const base = process.env.NEXT_PUBLIC_S3_MEDIA_BASE || "";
-  if (!base) return u;
+  if (val.startsWith("http://") || val.startsWith("https://") || val.startsWith("data:")) {
+    return val;
+  }
 
-  return `${base.replace(/\/+$/, "")}/${u.replace(/^\/+/, "")}`;
+  const base = (process.env.NEXT_PUBLIC_S3_MEDIA_BASE || "").trim();
+  if (!base) return val;
+
+  return `${base.replace(/\/+$/, "")}/${val.replace(/^\/+/, "")}`;
 }
 
 export async function GET(_request: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
@@ -45,12 +49,14 @@ export async function GET(_request: NextRequest, ctx: { params: Promise<{ slug: 
   if (postErr) return NextResponse.json({ error: postErr.message }, { status: 500 });
   if (!post?.id) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // ✅ created_at removed (your table doesn't have it)
   const { data: media, error: mediaErr } = await supabase
     .from(MEDIA_TABLE)
     .select("id,type,url,caption,idx")
     .eq("post_id", post.id)
-    .order("idx", { ascending: true });
+    // primary ordering by idx
+    .order("idx", { ascending: true, nullsFirst: false })
+    // secondary stable ordering so ties/nulls don't shuffle
+    .order("id", { ascending: true });
 
   if (mediaErr) {
     console.error("[media GET] supabase error:", mediaErr);

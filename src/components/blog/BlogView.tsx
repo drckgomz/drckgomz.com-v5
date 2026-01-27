@@ -11,7 +11,6 @@ import BlogContent from "@/components/blog/BlogContent";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -36,7 +35,7 @@ type Post = {
   created_at?: string | null;
   updated_at?: string | null;
   thumbnail_url?: string | null;
-  media?: RenderMediaItem[]; // ✅ canonical for BlogContent
+  media?: RenderMediaItem[];
 };
 
 function statusVariant(status?: string | null) {
@@ -57,18 +56,6 @@ function statusLabel(status?: string | null) {
   return "";
 }
 
-// Helper: turn thumbnail_url into a full URL if it’s relative
-function resolveUrl(url: string | null | undefined): string {
-  if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-
-  const base =
-    process.env.NEXT_PUBLIC_S3_MEDIA_BASE ||
-    "https://derickgomez-images.s3.amazonaws.com";
-
-  return `${base.replace(/\/$/, "")}/${url.replace(/^\//, "")}`;
-}
-
 function coerceMediaType(t: any): Media["type"] {
   const s = String(t || "image").toLowerCase();
   if (s === "youtube") return "youtube";
@@ -77,28 +64,27 @@ function coerceMediaType(t: any): Media["type"] {
 }
 
 // Normalize backend post objects into the Post type used by BlogContent
+// IMPORTANT: Do NOT "resolveUrl" here anymore.
+// Your API already normalizes thumbnail_url + media.url, and MediaCarousel also normalizes defensively.
 function normalizePost(raw: any): Post {
   const created_at = raw.created_at || raw.date || null;
 
   let media: RenderMediaItem[] = [];
 
-  // If API returns media
   if (Array.isArray(raw.media) && raw.media.length > 0) {
     media = raw.media.map((m: any, idx: number) => ({
-      // ✅ id REQUIRED by render.MediaItem
       id: String(m.id ?? `${raw.id ?? raw.slug ?? "post"}:${idx}`),
       type: coerceMediaType(m.type),
-      url: resolveUrl(String(m.url || "")),
+      url: String(m.url || ""),
       caption: m.caption ?? null,
       title: m.title ?? null,
     }));
   } else if (raw.thumbnail_url) {
-    // Fallback to thumbnail_url if present
     media = [
       {
         id: String(raw.id ?? raw.slug ?? "thumb"),
         type: "image",
-        url: resolveUrl(raw.thumbnail_url),
+        url: String(raw.thumbnail_url || ""),
         caption: raw.title ?? "",
         title: raw.title ?? null,
       },
@@ -115,17 +101,17 @@ function normalizePost(raw: any): Post {
     date: raw.date ?? null,
     created_at,
     updated_at: raw.updated_at ?? null,
-    thumbnail_url: raw.thumbnail_url ? resolveUrl(raw.thumbnail_url) : null,
+    thumbnail_url: raw.thumbnail_url ?? null,
     media,
   };
 }
 
 // Convert RenderMediaItem[] into the stricter Media[] for MediaCarousel
 function toCarouselMedia(items: RenderMediaItem[]): Media[] {
-  return items
+  return (items ?? [])
     .filter((m) => m && typeof m.url === "string" && m.url.length > 0)
     .map((m) => ({
-      id: m.id, // required, already string
+      id: m.id,
       type: coerceMediaType(m.type),
       url: m.url,
       caption: m.caption ?? null,

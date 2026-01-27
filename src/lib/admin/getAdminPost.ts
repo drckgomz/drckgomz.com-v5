@@ -1,6 +1,7 @@
 // src/lib/admin/getAdminPost.ts
 import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { normalizeMaybeS3Url } from "@/lib/blog/media";
 
 export type AdminPost = {
   id: string;
@@ -42,8 +43,20 @@ export async function getAdminPostBySlug(slug: string): Promise<AdminPost | null
     console.error("[getAdminPostBySlug] media error", mediaErr);
   }
 
-  return {
+  const normalizedPost = {
     ...(post as any),
-    media: Array.isArray(media) ? media : [],
+    thumbnail_url: normalizeMaybeS3Url((post as any).thumbnail_url ?? null),
+  };
+
+  const normalizedMedia = Array.isArray(media)
+    ? media.map((m: any) => ({
+        ...m,
+        url: normalizeMaybeS3Url(m.url ?? null),
+      }))
+    : [];
+
+  return {
+    ...(normalizedPost as any),
+    media: normalizedMedia,
   };
 }

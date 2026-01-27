@@ -2,6 +2,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireAdminApi } from "@/lib/admin/requireAdminApi";
+import { normalizeMaybeS3Url } from "@/lib/blog/media";
 
 const POSTS_TABLE = "posts";
 const MEDIA_TABLE = "media";
@@ -17,6 +18,14 @@ function getSupabaseAdmin() {
   return createClient(url, serviceRole, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+}
+
+function normalizePostForClient(p: any) {
+  if (!p || typeof p !== "object") return p;
+  return {
+    ...p,
+    thumbnail_url: normalizeMaybeS3Url(p.thumbnail_url ?? null),
+  };
 }
 
 export async function GET(
@@ -40,7 +49,7 @@ export async function GET(
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return NextResponse.json({ post: data });
+  return NextResponse.json({ post: normalizePostForClient(data) });
 }
 
 export async function PATCH(
@@ -89,7 +98,7 @@ export async function PATCH(
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ post: updated });
+    return NextResponse.json({ post: normalizePostForClient(updated) });
   }
 
   const insertPayload = {
@@ -104,7 +113,10 @@ export async function PATCH(
   };
 
   if (!insertPayload.slug || !insertPayload.title) {
-    return NextResponse.json({ error: "title and slug are required to create a post" }, { status: 400 });
+    return NextResponse.json(
+      { error: "title and slug are required to create a post" },
+      { status: 400 }
+    );
   }
 
   const { data: created, error } = await supabase
@@ -114,7 +126,7 @@ export async function PATCH(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ post: created }, { status: 201 });
+  return NextResponse.json({ post: normalizePostForClient(created) }, { status: 201 });
 }
 
 export async function DELETE(

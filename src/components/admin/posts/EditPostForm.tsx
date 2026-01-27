@@ -207,7 +207,9 @@ export default function EditPostForm({ initialPost }: { initialPost: AdminPost }
   async function onSetThumbnail(m: { id: string; url: string }) {
     setThumbnailUrl(m.url);
 
-    const res = await fetch(`/api/admin/posts/${encodeURIComponent(initialPost.slug)}`, {
+    const slugForPatch = editor.slug?.trim() || initialPost.slug;
+
+    const res = await fetch(`/api/admin/posts/${encodeURIComponent(slugForPatch)}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ thumbnail_url: m.url }),
@@ -220,6 +222,7 @@ export default function EditPostForm({ initialPost }: { initialPost: AdminPost }
       router.refresh();
     }
   }
+
 
   return (
     <div className="space-y-6">
