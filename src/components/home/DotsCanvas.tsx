@@ -1,53 +1,44 @@
 // frontend/src/features/home/components/DotsCanvas.tsx
 "use client";
+
 import * as React from "react";
+import { cn } from "@/lib/utils/utils";
 
-type Props = React.HTMLAttributes<HTMLDivElement>; // accept className, style, etc.
+type Props = { className?: string };
 
-export default function DotsCanvas({ className, ...rest }: Props) {
-  const containerRef = React.useRef<HTMLDivElement | null>(null);
-  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+export default function DotsCanvas({ className }: Props) {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
   React.useEffect(() => {
-    const container = containerRef.current;
-    const canvas = canvasRef.current;
-    if (!container || !canvas) return;
+    const canvasEl = canvasRef.current;
+    if (!canvasEl) return;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const ctxEl = canvasEl.getContext("2d");
+    if (!ctxEl) return;
 
-    // Capture non-null refs so TS is happy in inner fns
-    const containerEl: HTMLDivElement = container;
-    const canvasEl: HTMLCanvasElement = canvas;
-    const ctxEl: CanvasRenderingContext2D = ctx;
-
-    // visuals
-    const dotSpacing = 25;
-    const dotRadius = 1.5;
+    const dotSpacing = 26;
+    const dotRadius = 1.6;
     const amplitude = 5;
     const waveSpeed = 0.01;
-    const wavelength = 100;
+    const wavelength = 110;
 
     let dots: { x: number; y: number }[] = [];
     let time = 0;
     let raf = 0;
 
-    function resize() {
-      const w = Math.max(1, containerEl.clientWidth);
-      const h = Math.max(1, containerEl.clientHeight);
+    const resize = () => {
       const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(1, window.innerWidth);
+      const h = Math.max(1, window.innerHeight);
 
-      // match canvas device pixels to container CSS pixels
       canvasEl.width = Math.floor(w * dpr);
       canvasEl.height = Math.floor(h * dpr);
       canvasEl.style.width = `${w}px`;
       canvasEl.style.height = `${h}px`;
 
-      // reset any existing transform then scale for DPR
       ctxEl.setTransform(1, 0, 0, 1, 0, 0);
       ctxEl.scale(dpr, dpr);
 
-      // recompute the grid for the new size (in CSS px space)
       dots = [];
       const cols = Math.floor(w / dotSpacing);
       const rows = Math.floor(h / dotSpacing);
@@ -56,45 +47,42 @@ export default function DotsCanvas({ className, ...rest }: Props) {
           dots.push({ x: c * dotSpacing, y: r * dotSpacing });
         }
       }
-    }
+    };
 
-    function render() {
-      const w = containerEl.clientWidth;
-      const h = containerEl.clientHeight;
+    const render = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
       ctxEl.clearRect(0, 0, w, h);
 
+      ctxEl.fillStyle = "rgba(255,255,255,0.55)";
       for (const dot of dots) {
         const y = dot.y + Math.sin(dot.x / wavelength + time) * amplitude;
         ctxEl.beginPath();
         ctxEl.arc(dot.x, y, dotRadius, 0, Math.PI * 2);
-        ctxEl.fillStyle = "white";
         ctxEl.fill();
       }
 
       time += waveSpeed;
-      raf = requestAnimationFrame(render);
-    }
-
-    // Resize on container changes (works inside responsive layouts)
-    const ro = new ResizeObserver(() => resize());
-    ro.observe(containerEl);
+      raf = window.requestAnimationFrame(render);
+    };
 
     resize();
     render();
 
+    window.addEventListener("resize", resize, { passive: true });
+
     return () => {
-      cancelAnimationFrame(raf);
-      ro.disconnect();
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
     };
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      className={`relative w-full h-full bg-black ${className ?? ""}`}
-      {...rest}
-    >
-      <canvas ref={canvasRef} className="absolute pointer-events-none inset-0" aria-hidden />
-    </div>
+    <canvas
+      ref={canvasRef}
+      aria-hidden
+      className={cn("fixed inset-0 z-0 pointer-events-none", className)}
+    />
   );
 }
