@@ -18,26 +18,21 @@ function getSupabaseAdmin() {
 }
 
 function coerceIds(body: any): string[] {
-  // Accept: { order: [...] } (string[] or object[])
   if (Array.isArray(body?.order)) {
     const arr = body.order;
-    // string[] / number[]
     if (arr.every((x: any) => typeof x === "string" || typeof x === "number")) {
       return arr.map((x: any) => String(x)).filter(Boolean);
     }
-    // object[] like [{id}]
     return arr
       .map((x: any) => x && (x.id ?? x.mediaId ?? x.value))
       .map((x: any) => String(x ?? "").trim())
       .filter(Boolean);
   }
 
-  // Accept: raw array of ids: ["a","b"]
   if (Array.isArray(body) && body.every((x) => typeof x === "string" || typeof x === "number")) {
     return body.map((x) => String(x)).filter(Boolean);
   }
 
-  // Accept: raw array of objects: [{id},{...}]
   if (Array.isArray(body) && body.length) {
     return body
       .map((x) => (x && (x.id ?? x.mediaId ?? x.value)) as any)
@@ -45,7 +40,6 @@ function coerceIds(body: any): string[] {
       .filter(Boolean);
   }
 
-  // Accept common wrappers
   const candidate =
     body?.ordered ??
     body?.items ??
@@ -56,27 +50,21 @@ function coerceIds(body: any): string[] {
     null;
 
   if (Array.isArray(candidate)) {
-    // string[] / number[]
     if (candidate.every((x: any) => typeof x === "string" || typeof x === "number")) {
       return candidate.map((x: any) => String(x)).filter(Boolean);
     }
-
     return candidate
       .map((x: any) => x && (x.id ?? x.mediaId ?? x.value))
       .map((x: any) => String(x ?? "").trim())
       .filter(Boolean);
   }
 
-  // Accept: { ids: [...] }
   if (Array.isArray(body?.ids)) {
     return body.ids.map((x: any) => String(x ?? "").trim()).filter(Boolean);
   }
 
   return [];
 }
-
-
-
 
 export async function PATCH(request: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
   const denied = await requireAdminApi();
@@ -86,21 +74,19 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ slug:
   const slugParam = decodeURIComponent(slug);
 
   const body = await request.json().catch(() => null);
+  const requestedIds = coerceIds(body);
 
-  const ids = coerceIds(body);
-
-  if (!ids.length) {
-  return NextResponse.json(
-    {
-      error: "Invalid reorder payload. Expected ids or list of {id}.",
-      received: body,
-      parsedIds: ids,
-      example: { order: ["media-id-1", "media-id-2"] },
-    },
-    { status: 400 }
-  );
-}
-
+  if (!requestedIds.length) {
+    return NextResponse.json(
+      {
+        error: "Invalid reorder payload. Expected ids or list of {id}.",
+        received: body,
+        parsedIds: requestedIds,
+        example: { order: ["media-id-1", "media-id-2"] },
+      },
+      { status: 400 }
+    );
+  }
 
   const supabase = getSupabaseAdmin();
 
@@ -113,33 +99,46 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ slug:
   if (postErr) return NextResponse.json({ error: postErr.message }, { status: 500 });
   if (!post?.id) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Safety: only reorder ids that belong to this post
-  const { data: rows, error: rowsErr } = await supabase
+  // Load ALL media rows for this post (current order)
+  const { data: allRows, error: allErr } = await supabase
     .from(MEDIA_TABLE)
-    .select("id")
+    .select("id, idx, created_at")
     .eq("post_id", post.id)
-    .in("id", ids);
+    .order("idx", { ascending: true })
+    .order("created_at", { ascending: true });
 
-  if (rowsErr) return NextResponse.json({ error: rowsErr.message }, { status: 500 });
+  if (allErr) return NextResponse.json({ error: allErr.message }, { status: 500 });
 
-  const allowed = new Set((rows ?? []).map((r: any) => String(r.id)));
-  const filtered = ids.filter((id) => allowed.has(id));
+  const allIds = (allRows ?? []).map((r: any) => String(r.id));
+  const allSet = new Set(allIds);
 
-  if (!filtered.length) {
+  // keep only ids that belong to this post + dedupe
+  const seen = new Set<string>();
+  const validRequested = requestedIds
+    .map((x) => String(x))
+    .filter((id) => allSet.has(id))
+    .filter((id) => {
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+
+  if (!validRequested.length) {
     return NextResponse.json({ error: "No valid media IDs for this post." }, { status: 400 });
   }
 
-  // Update idx in order
-  for (let i = 0; i < filtered.length; i++) {
-    const id = filtered[i];
-    const { error: updErr } = await supabase
-      .from(MEDIA_TABLE)
-      .update({ idx: i })
-      .eq("post_id", post.id)
-      .eq("id", id);
+  // Final order = requested + remaining (preserve existing order for the rest)
+  const remaining = allIds.filter((id) => !seen.has(id));
+  const finalOrder = [...validRequested, ...remaining];
 
-    if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
-  }
+  // Single request: upsert idx for every media row (unique, sequential)
+  const payload = finalOrder.map((id, idx) => ({ id, idx }));
 
-  return NextResponse.json({ ok: true, ids: filtered });
+  const { error: upErr } = await supabase
+    .from(MEDIA_TABLE)
+    .upsert(payload, { onConflict: "id" });
+
+  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true, ids: finalOrder });
 }

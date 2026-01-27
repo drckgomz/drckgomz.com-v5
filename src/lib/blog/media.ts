@@ -10,11 +10,29 @@ export type NormalizedMedia = {
   created_at?: string | null;
 };
 
+export function normalizeMaybeS3Url(u: string | null) {
+  if (!u) return u;
+
+  // already absolute
+  if (u.startsWith("http://") || u.startsWith("https://") || u.startsWith("data:")) return u;
+
+  // ✅ IMPORTANT: local uploads in /public/uploads should remain local
+  if (u.startsWith("/uploads/")) return u;
+  if (u.startsWith("uploads/")) return `/${u}`;
+
+  // If it's some other relative key, *then* map to S3 (optional behavior)
+  const base = process.env.NEXT_PUBLIC_S3_MEDIA_BASE || "";
+  if (!base) return u;
+
+  const key = u.replace(/^\/+/, "");
+  return `${base.replace(/\/+$/, "")}/${key}`;
+}
+
 export const normalizeMedia = (list: any[] = []): NormalizedMedia[] =>
   list.map((m) => ({
-    id: m.id,
+    id: String(m.id),
     type: m.type,
-    url: m.url,
+    url: normalizeMaybeS3Url(m.url) ?? String(m.url ?? ""),
     caption:
       m.caption ??
       m.name ??
@@ -47,5 +65,7 @@ export const sortMedia = <T extends { idx?: number | null; created_at?: any; id:
   });
 
 export const getYouTubeVideoId = (url: string) =>
-  (url.match(/(?:youtube\.com\/(?:watch\?.*v=|embed\/|shorts\/)|youtu\.be\/)([0-9A-Za-z_-]{11})/)
-    || url.match(/[?&]v=([0-9A-Za-z_-]{11})/))?.[1];
+  (
+    url.match(/(?:youtube\.com\/(?:watch\?.*v=|embed\/|shorts\/)|youtu\.be\/)([0-9A-Za-z_-]{11})/) ||
+    url.match(/[?&]v=([0-9A-Za-z_-]{11})/)
+  )?.[1];
