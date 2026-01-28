@@ -25,18 +25,16 @@ function resolveUrl(url: string | null | undefined): string {
   const u = (url ?? "").trim();
   if (!u) return "";
 
-  // already absolute
   if (u.startsWith("http://") || u.startsWith("https://") || u.startsWith("data:")) return u;
 
-  // local uploads served from /public/uploads -> /uploads/...
   if (u.startsWith("/uploads/")) return u;
   if (u.startsWith("uploads/")) return `/${u}`;
 
-  const base = process.env.NEXT_PUBLIC_S3_MEDIA_BASE || "https://derickgomez-images.s3.amazonaws.com";
+  const base =
+    process.env.NEXT_PUBLIC_S3_MEDIA_BASE || "https://derickgomez-images.s3.amazonaws.com";
   return `${base.replace(/\/+$/, "")}/${u.replace(/^\/+/, "")}`;
 }
 
-// robust YouTube id extractor (works for youtu.be, watch?v=, shorts, embed)
 function getYouTubeVideoId(url: string): string | undefined {
   const u = String(url || "");
   const match =
@@ -50,7 +48,6 @@ function youtubeThumb(url: string) {
   return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : "";
 }
 
-
 function normalizePost(raw: any): Post {
   const created_at = raw.created_at || raw.date || "";
 
@@ -63,7 +60,6 @@ function normalizePost(raw: any): Post {
         .filter((m: MediaItem) => Boolean(m.url))
     : [];
 
-  // ✅ normalize and ACTUALLY return this value
   const thumbnail_url = raw.thumbnail_url ? resolveUrl(String(raw.thumbnail_url)) : null;
 
   return {
@@ -73,7 +69,7 @@ function normalizePost(raw: any): Post {
     created_at,
     media,
     status: raw.status ?? undefined,
-    thumbnail_url, // ✅ use normalized value
+    thumbnail_url,
   };
 }
 
@@ -89,7 +85,6 @@ function isYoutubeUrl(u: string) {
 function getThumbnail(post: { thumbnail_url?: string | null; media?: MediaItem[] }) {
   const fallback = "/logo192.png";
 
-  // 1) explicit thumbnail wins — but if it's a youtube URL, convert it
   if (post.thumbnail_url) {
     const t = String(post.thumbnail_url);
     if (isYoutubeUrl(t)) return youtubeThumb(t) || fallback;
@@ -99,22 +94,16 @@ function getThumbnail(post: { thumbnail_url?: string | null; media?: MediaItem[]
   const list = Array.isArray(post.media) ? post.media : [];
   if (!list.length) return fallback;
 
-  // 2) first media item decides — but youtube must be converted
   const first = list[0];
   const firstType = String(first?.type || "").toLowerCase();
   const firstUrl = String(first?.url || "");
 
-  if (firstType === "youtube" || isYoutubeUrl(firstUrl)) {
-    return youtubeThumb(firstUrl) || fallback;
-  }
-
+  if (firstType === "youtube" || isYoutubeUrl(firstUrl)) return youtubeThumb(firstUrl) || fallback;
   if (firstType === "image" && firstUrl) return resolveUrl(firstUrl);
 
-  // 3) fallback: first image anywhere
   const img = list.find((m) => String(m.type).toLowerCase() === "image" && m.url);
   if (img?.url) return resolveUrl(img.url);
 
-  // 4) fallback: first youtube anywhere
   const yt = list.find((m) => String(m.type).toLowerCase() === "youtube" && m.url);
   if (yt?.url) return youtubeThumb(yt.url) || fallback;
 
@@ -190,6 +179,8 @@ export default function AllPostsGrid({ hideTitle = false }: { hideTitle?: boolea
 
       try {
         const token = await getToken().catch(() => null);
+
+        // You *can* request "all" here; the API will enforce privacy.
         const qs = new URLSearchParams();
         qs.set("status", "all");
 
@@ -204,9 +195,12 @@ export default function AllPostsGrid({ hideTitle = false }: { hideTitle?: boolea
         }
 
         const data = await res.json();
-        const rawList: any[] = Array.isArray(data) ? data : data.items ?? data.posts ?? data.blogs ?? [];
+        const rawList: any[] = Array.isArray(data)
+          ? data
+          : data.items ?? data.posts ?? data.blogs ?? [];
 
         const normalized = rawList.map(normalizePost);
+
         if (mounted) setPosts(normalized.slice(0, 25));
       } catch (err: any) {
         console.error("[AllPostsGrid] fetch error:", err);
@@ -242,17 +236,6 @@ export default function AllPostsGrid({ hideTitle = false }: { hideTitle?: boolea
         {posts.map((post) => {
           const thumbnail = getThumbnail(post);
 
-          if (process.env.NODE_ENV !== "production") {
-            console.log("[thumb]", {
-              id: post.id,
-              title: post.title,
-              thumbnail_url: post.thumbnail_url,
-              media0: post.media?.[0],
-              computed: thumbnail,
-            });
-          }
-
-
           return (
             <Link
               key={post.id}
@@ -279,11 +262,6 @@ export default function AllPostsGrid({ hideTitle = false }: { hideTitle?: boolea
                     loading="lazy"
                     decoding="async"
                     onError={(e) => {
-                      console.log("[thumb img error]", {
-                        postId: post.id,
-                        title: post.title,
-                        src: (e.currentTarget as HTMLImageElement).src,
-                      });
                       (e.currentTarget as HTMLImageElement).src = "/logo192.png";
                     }}
                   />
