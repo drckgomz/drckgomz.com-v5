@@ -6,8 +6,6 @@ import { getUserProfile } from "@/lib/profile/getUserProfile";
 export async function requireAdmin() {
   const profile = await getUserProfile();
 
-  // If middleware protects /admin, profile should exist when signed in.
-  // But keep it safe anyway.
   if (!profile) {
     redirect("/sign-in?redirect_url=/admin");
   }
