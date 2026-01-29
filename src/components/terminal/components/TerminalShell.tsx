@@ -1,4 +1,4 @@
-// src/components/terminal/TerminalShell.tsx
+// src/components/terminal/components/TerminalShell.tsx
 "use client";
 
 import * as React from "react";
@@ -27,14 +27,7 @@ export default function TerminalShell() {
   const { signOut } = useClerk();
   const [isAdmin] = React.useState(false);
 
-  const {
-    lines,
-    print,
-    typeWrite,
-    clearTerminal,
-    beginCommandSession,
-    isActive,
-  } = useTerminalIO();
+  const { lines, typeWrite, clearTerminal, beginCommandSession, isActive } = useTerminalIO();
 
   const {
     isAudioPlaying,
@@ -49,7 +42,7 @@ export default function TerminalShell() {
   } = useMedia();
 
   const { engineRef, isReady } = useCommandEngine({
-    print,
+    print: () => {},
     typeWrite,
     isActive,
     isSignedIn: Boolean(isSignedIn),
@@ -58,36 +51,19 @@ export default function TerminalShell() {
     showVideoIf,
   });
 
-  // DEBUG snapshot
   React.useEffect(() => {
     group("shell:mount");
     log("auth snapshot", { isLoaded, isSignedIn, userId, sessionId });
-    log("media snapshot", {
-      isAudioPlaying,
-      audioSrc,
-      isHiddenVideoPlaying,
-      hiddenVideoSrc,
-    });
     log("engine snapshot", { isReady, hasEngine: !!engineRef.current });
     groupEnd();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  React.useEffect(
-    () => log("auth change", { isLoaded, isSignedIn, userId, sessionId }),
-    [isLoaded, isSignedIn, userId, sessionId]
-  );
-  React.useEffect(
-    () => log("engine change", { isReady, hasEngine: !!engineRef.current }),
-    [isReady]
-  );
 
   const [input, setInput] = React.useState("");
   const [history, setHistory] = React.useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // ---------- COMMAND SUBMIT ----------
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const raw = input.trim();
@@ -96,24 +72,11 @@ export default function TerminalShell() {
     const lower = raw.toLowerCase();
     setInput("");
 
-    group(`command "${raw}"`);
-    log("before", {
-      lower,
-      isLoaded,
-      isSignedIn,
-      userId,
-      sessionId,
-      isActive: isActive(),
-      isReady,
-      hasEngine: !!engineRef.current,
-    });
     console.time("[TERMINAL] command duration");
-
     try {
       if (lower === "clear" || lower === "cls") {
         stopAllMedia();
         clearTerminal();
-        log("action", "clear");
         return;
       }
 
@@ -131,12 +94,7 @@ export default function TerminalShell() {
         }
 
         const eng = engineRef.current;
-        if (!eng) {
-          err("help: engineRef.current is null after wait");
-        }
-
         const all = eng?.list?.() ?? [];
-        log("help: list() raw size", all.length, all);
 
         const normalized = all.map((c: any) => ({
           ...c,
@@ -150,17 +108,6 @@ export default function TerminalShell() {
           .filter((c) => c.enabled && c.showInHelp)
           .sort((a, b) => a.name.localeCompare(b.name));
 
-        try {
-          console.table(
-            normalized.map((c: any) => ({
-              name: c.name,
-              enabled: c.enabled,
-              showInHelp: c.showInHelp,
-              desc: c.description,
-            }))
-          );
-        } catch {}
-
         await typeWrite("Commands:\n");
 
         for (const c of visible) {
@@ -169,12 +116,9 @@ export default function TerminalShell() {
         }
 
         const names = new Set(visible.map((c) => c.name.toLowerCase()));
-        if (!names.has("blog"))
-          await typeWrite("  blog — open blog (sign-in required)\n", 18);
-        if (!names.has("logout"))
-          await typeWrite("  logout — sign out\n", 18);
-        if (!names.has("clear"))
-          await typeWrite("  clear — clear terminal\n", 18);
+        if (!names.has("blog")) await typeWrite("  blog — open blog (sign-in required)\n", 18);
+        if (!names.has("logout")) await typeWrite("  logout — sign out\n", 18);
+        if (!names.has("clear")) await typeWrite("  clear — clear terminal\n", 18);
 
         if (!visible.length) {
           await typeWrite(
@@ -182,27 +126,16 @@ export default function TerminalShell() {
             18
           );
         }
-
-        log("action", "help", {
-          registered: all.length,
-          visible: visible.length,
-          names: visible.map((c) => c.name),
-        });
         return;
       }
 
       if (lower === "blog") {
         await typeWrite("Opening blog…");
-        if (isLoaded && userId) {
-          router.push("/blog");
-        } else {
-          router.push("/blog");
-        }
+        router.push("/blog");
         return;
       }
 
       if (lower === "logout") {
-        log("logout called");
         await signOut();
         router.push("/terminal");
         return;
@@ -211,17 +144,11 @@ export default function TerminalShell() {
       const engine = engineRef.current;
       if (!engine) {
         await typeWrite("Engine not ready. Try again.");
-        warn("engine not ready at execute", {
-          isReady,
-          engine: !!engineRef.current,
-        });
         return;
       }
 
       beginCommandSession();
-      log("engine.execute start", { cmd: raw });
       await engine.execute(raw);
-      log("engine.execute done", { cmd: raw });
     } catch (e) {
       err("command error", e);
       try {
@@ -229,35 +156,34 @@ export default function TerminalShell() {
       } catch {}
     } finally {
       console.timeEnd("[TERMINAL] command duration");
-      groupEnd();
     }
   }
 
   return (
     <>
-      <main className="relative z-10 mx-auto w-full max-w-4xl flex-1 px-4 pt-24 overflow-y-auto overscroll-contain">
-        <div className="bg-black/50 border border-prompt-color rounded-lg min-h-[30vh] overflow-hidden">
+      {/* ✅ IMPORTANT: main does NOT scroll. Only TerminalOutput scrolls. */}
+      <main className="relative z-10 mx-auto w-full max-w-4xl flex-1 min-h-0 px-4 pt-24 pb-4 overflow-hidden">
+        {/* Terminal box fills available space; output is scrollable; input pinned. */}
+        <section className="bg-black/50 border border-prompt-color rounded-lg overflow-hidden,
+         flex flex-col min-h-0,
+         w-full,
+         h-[58dvh] sm:h-[54dvh lg:h-[52dvh],
+         max-h-[520dvh]">
           <TerminalOutput lines={lines} />
           <TerminalInput
             input={input}
             setInput={setInput}
-            handleSubmit={(e) => {
-              void onSubmit(e);
-            }}
+            handleSubmit={(e) => void onSubmit(e)}
             inputRef={inputRef}
             history={history}
             historyIndex={historyIndex}
             setHistoryIndex={setHistoryIndex}
             setInputFromHistory={(cmd) => setInput(cmd)}
           />
-        </div>
+        </section>
 
         <div className="mt-2">
-          <AudioPlayer
-            isAudioPlaying={isAudioPlaying}
-            src={audioSrc}
-            terminalInputRef={inputRef}
-          />
+          <AudioPlayer isAudioPlaying={isAudioPlaying} src={audioSrc} terminalInputRef={inputRef} />
         </div>
       </main>
 

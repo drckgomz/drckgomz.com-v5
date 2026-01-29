@@ -52,7 +52,11 @@ export default function VideoBackground({ cycleMs = 0 }: Props) {
   const selectedMp4 = selected.replace(".webm", ".mp4");
 
   return (
-    <div className="fixed inset-0 z-0 pointer-events-none">
+    <div
+      style={{ height: "var(--app-vh)" }}
+      className="absolute inset-0 z-0 pointer-events-none overflow-hidden"
+    >
+
       {mode === "image" ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={STATIC_IMG} alt="Background" className="w-full h-full object-cover" />

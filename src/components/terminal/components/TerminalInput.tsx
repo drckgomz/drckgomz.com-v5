@@ -1,6 +1,6 @@
-// frontend/src/features/terminal/components/TerminalInput.tsx
-
+// src/components/terminal/components/TerminalInput.tsx
 "use client";
+
 import * as React from "react";
 
 type InputRef =
@@ -19,7 +19,14 @@ type Props = {
 };
 
 export default function TerminalInput({
-  input, setInput, handleSubmit, inputRef, history, historyIndex, setHistoryIndex, setInputFromHistory,
+  input,
+  setInput,
+  handleSubmit,
+  inputRef,
+  history,
+  historyIndex,
+  setHistoryIndex,
+  setInputFromHistory,
 }: Props) {
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
@@ -46,8 +53,15 @@ export default function TerminalInput({
   }
 
   return (
-    <div id="input-line" className="flex items-center px-4 py-2">
+    <div
+      id="input-line"
+      className="flex items-center px-4 py-2 border-t border-white/10 bg-black/40"
+      style={{
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
+      }}
+    >
       <span className="text-prompt-color font-bold text-base md:text-lg mr-2">&gt;</span>
+
       <form onSubmit={handleSubmit} className="w-full">
         <input
           ref={inputRef}
@@ -57,10 +71,12 @@ export default function TerminalInput({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
           className="w-full bg-transparent outline-none text-prompt-color border-0 pl-2 text-[16px] md:text-base"
-          autoFocus
+          autoCapitalize="none"
+          autoCorrect="off"
           autoComplete="off"
           spellCheck={false}
           aria-label="Terminal input"
+          inputMode="text"
         />
       </form>
     </div>

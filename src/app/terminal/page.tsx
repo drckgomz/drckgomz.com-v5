@@ -7,11 +7,10 @@ export const revalidate = 0;
 
 export default function TerminalPage() {
   return (
-    <div className="relative h-dvh w-screen bg-black text-white overflow-x-hidden overflow-y-hidden flex flex-col">
-      <div className="pb-10">
+    <div className="relative w-screen h-full overflow-hidden flex flex-col bg-black text-white">
+      <div className="p-5">
         <Header />
       </div>
-      
       <VideoBackground />
       <TerminalShell />
     </div>
