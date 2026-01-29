@@ -235,7 +235,7 @@ export default function TerminalShell() {
 
   return (
     <>
-      <main className="relative z-10 mx-auto w-full max-w-4xl mt-6 px-4 pt-24">
+      <main className="relative z-10 mx-auto w-full max-w-4xl flex-1 px-4 pt-24 overflow-y-auto overscroll-contain">
         <div className="bg-black/50 border border-prompt-color rounded-lg min-h-[30vh] overflow-hidden">
           <TerminalOutput lines={lines} />
           <TerminalInput

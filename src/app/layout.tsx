@@ -8,6 +8,14 @@ export const metadata: Metadata = {
   description: "Derick's portfolio + blog + terminal",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -24,8 +32,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       afterSignUpUrl="/blog"
     >
       <html lang="en">
-        <body className="min-h-dvh bg-black text-white overflow-x-hidden overflow-y-auto">
-          {children}
+        <body className="min-h-dvh bg-black text-white overflow-x-hidden overflow-y-hidden">
+          <div className="min-h-dvh">{children}</div>
         </body>
       </html>
     </ClerkProvider>

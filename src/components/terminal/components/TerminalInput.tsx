@@ -56,7 +56,7 @@ export default function TerminalInput({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          className="w-full bg-transparent outline-none text-prompt-color border-0 pl-2 text-sm md:text-base"
+          className="w-full bg-transparent outline-none text-prompt-color border-0 pl-2 text-[16px] md:text-base"
           autoFocus
           autoComplete="off"
           spellCheck={false}
