@@ -16,7 +16,6 @@ type Props = {
   historyIndex: number;
   setHistoryIndex: (n: number) => void;
   setInputFromHistory: (cmd: string) => void;
-  onAnyFocus?: () => void;
 };
 
 const isIOS =
@@ -32,13 +31,10 @@ export default function TerminalInput({
   historyIndex,
   setHistoryIndex,
   setInputFromHistory,
-  onAnyFocus,
 }: Props) {
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleSubmit(e as unknown as React.FormEvent);
-    } else if (e.key === "ArrowUp") {
+    // ✅ don't handle Enter here (iOS can be weird). Only history keys.
+    if (e.key === "ArrowUp") {
       e.preventDefault();
       if (historyIndex > 0) {
         const i = historyIndex - 1;
@@ -59,12 +55,9 @@ export default function TerminalInput({
   }
 
   function handleFocus() {
-    onAnyFocus?.();
-
-    // iOS Safari often nudges layout when focusing an input.
-    // This snaps it back without breaking typing.
+    // ✅ snap back without re-focusing (no focus loop)
     requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     });
   }
 
@@ -72,9 +65,7 @@ export default function TerminalInput({
     <div
       id="input-line"
       className="flex items-center px-4 py-2 border-t border-white/10 bg-black/40"
-      style={{
-        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 18px)",
-      }}
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 18px)" }}
     >
       <span className="text-prompt-color font-bold text-base md:text-lg mr-2">&gt;</span>
 
@@ -94,8 +85,14 @@ export default function TerminalInput({
           spellCheck={false}
           aria-label="Terminal input"
           inputMode="text"
-          autoFocus={!isIOS} // ✅ critical: don’t autoFocus on iOS
+          enterKeyHint="go"
+          autoFocus={!isIOS} // ✅ don't autofocus on iOS
         />
+
+        {/* ✅ IMPORTANT: makes iOS “Go/Return” submit reliably */}
+        <button type="submit" className="sr-only" tabIndex={-1} aria-hidden="true">
+          submit
+        </button>
       </form>
     </div>
   );
