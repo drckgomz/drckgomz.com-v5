@@ -161,29 +161,45 @@ export default function TerminalShell() {
 
   return (
     <>
-      {/* ✅ IMPORTANT: main does NOT scroll. Only TerminalOutput scrolls. */}
-      <main className="relative z-10 mx-auto w-full max-w-4xl flex-1 min-h-0 px-4 pt-24 pb-4 overflow-hidden">
-        {/* Terminal box fills available space; output is scrollable; input pinned. */}
-        <section className="bg-black/50 border border-prompt-color rounded-lg overflow-hidden,
-         flex flex-col min-h-0,
-         w-full,
-         h-[58dvh] sm:h-[54dvh lg:h-[52dvh],
-         max-h-[520dvh]">
+      <main className="relative z-10 mx-auto w-full max-w-4xl flex-1 min-h-0 px-4 pt-28 sm:pt-36 pb-4 overflow-hidden">
+        <section
+          className={[
+            // window look
+            "mx-auto w-full",
+            "rounded-2xl border border-prompt-color/80",
+            "bg-black/55 backdrop-blur-md",
+            "shadow-[0_0_0_1px_rgba(0,0,0,.2)]",
+            // sizing
+            "max-w-[560px]",
+            "h-[46dvh] sm:h-[52dvh] lg:h-[520px]",
+            "min-h-[280px]",
+            // layout
+            "flex flex-col overflow-hidden",
+          ].join(" ")}
+        >
           <TerminalOutput lines={lines} />
-          <TerminalInput
-            input={input}
-            setInput={setInput}
-            handleSubmit={(e) => void onSubmit(e)}
-            inputRef={inputRef}
-            history={history}
-            historyIndex={historyIndex}
-            setHistoryIndex={setHistoryIndex}
-            setInputFromHistory={(cmd) => setInput(cmd)}
-          />
+
+          {/* input pinned inside the window */}
+          <div className="border-t border-prompt-color/25 bg-black/40">
+            <TerminalInput
+              input={input}
+              setInput={setInput}
+              handleSubmit={(e) => void onSubmit(e)}
+              inputRef={inputRef}
+              history={history}
+              historyIndex={historyIndex}
+              setHistoryIndex={setHistoryIndex}
+              setInputFromHistory={(cmd) => setInput(cmd)}
+            />
+          </div>
         </section>
 
-        <div className="mt-2">
-          <AudioPlayer isAudioPlaying={isAudioPlaying} src={audioSrc} terminalInputRef={inputRef} />
+        <div className="mt-3 max-w-[560px] mx-auto">
+          <AudioPlayer
+            isAudioPlaying={isAudioPlaying}
+            src={audioSrc}
+            terminalInputRef={inputRef}
+          />
         </div>
       </main>
 

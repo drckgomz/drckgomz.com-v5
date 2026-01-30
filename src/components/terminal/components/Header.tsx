@@ -3,11 +3,11 @@ import Link from "next/link";
 
 export default function Header() {
   return (
-    <header className="fixed top-10 inset-x-0 z-40">
-      <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-center">
+    <header className="fixed top-4 inset-x-0 z-40 pointer-events-none">
+      <div className="mx-auto max-w-6xl px-4 flex items-center justify-center">
         <Link
           href="/"
-          className="text-4xl sm:text-6xl font-bold text-white hover:opacity-80 tracking-wider"
+          className="pointer-events-auto text-3xl sm:text-6xl font-bold tracking-wider text-white/95 hover:opacity-80"
         >
           DRCKGOMZ
         </Link>

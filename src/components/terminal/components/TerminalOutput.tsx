@@ -16,13 +16,7 @@ export default function TerminalOutput({ lines }: { lines: Line[] }) {
     <div
       id="terminal-output"
       ref={outputRef}
-      className={[
-        "flex-1 min-h-0",
-        "text-sm md:text-base leading-6 whitespace-pre-wrap font-bold",
-        "text-prompt-color p-6",
-        "overflow-y-auto overscroll-contain",
-        "[scrollbar-gutter:stable]",
-      ].join(" ")}
+      className="flex-1 text-[13px] sm:text-sm leading-6 whitespace-pre-wrap text-prompt-color px-4 py-4 sm:px-6 sm:py-6 overflow-y-auto font-semibold"
       style={{
         WebkitOverflowScrolling: "touch",
       }}
