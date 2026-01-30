@@ -161,45 +161,30 @@ export default function TerminalShell() {
 
   return (
     <>
-      <main className="relative z-10 mx-auto w-full max-w-4xl flex-1 min-h-0 px-4 pt-28 sm:pt-36 pb-4 overflow-hidden">
-        <section
-          className={[
-            // window look
-            "mx-auto w-full",
-            "rounded-2xl border border-prompt-color/80",
-            "bg-black/55 backdrop-blur-md",
-            "shadow-[0_0_0_1px_rgba(0,0,0,.2)]",
-            // sizing
-            "max-w-[560px]",
-            "h-[46dvh] sm:h-[52dvh] lg:h-[520px]",
-            "min-h-[280px]",
-            // layout
-            "flex flex-col overflow-hidden",
-          ].join(" ")}
+      <main className="relative z-10 mx-auto w-full max-w-3xl h-full px-4 pt-20 sm:pt-28 pb-4">
+        <div
+          // ✅ Smaller box + doesn’t try to become the whole page
+          className="mx-auto w-full rounded-lg border border-prompt-color bg-black/55 overflow-hidden"
+          style={{
+            // ✅ cap height so it never becomes massive on mobile
+            height: "min(360px, 46dvh)",
+          }}
         >
           <TerminalOutput lines={lines} />
-
-          {/* input pinned inside the window */}
-          <div className="border-t border-prompt-color/25 bg-black/40">
-            <TerminalInput
-              input={input}
-              setInput={setInput}
-              handleSubmit={(e) => void onSubmit(e)}
-              inputRef={inputRef}
-              history={history}
-              historyIndex={historyIndex}
-              setHistoryIndex={setHistoryIndex}
-              setInputFromHistory={(cmd) => setInput(cmd)}
-            />
-          </div>
-        </section>
-
-        <div className="mt-3 max-w-[560px] mx-auto">
-          <AudioPlayer
-            isAudioPlaying={isAudioPlaying}
-            src={audioSrc}
-            terminalInputRef={inputRef}
+          <TerminalInput
+            input={input}
+            setInput={setInput}
+            handleSubmit={(e) => void onSubmit(e)}
+            inputRef={inputRef}
+            history={history}
+            historyIndex={historyIndex}
+            setHistoryIndex={setHistoryIndex}
+            setInputFromHistory={(cmd) => setInput(cmd)}
           />
+        </div>
+
+        <div className="mt-2">
+          <AudioPlayer isAudioPlaying={isAudioPlaying} src={audioSrc} terminalInputRef={inputRef} />
         </div>
       </main>
 

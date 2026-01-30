@@ -2,11 +2,8 @@
 import type { Metadata } from "next";
 import VHSetter from "@/components/terminal/components/VHSetter";
 
-export const metadata: Metadata = {
-  title: "Terminal • drckgomz",
-};
+export const metadata: Metadata = { title: "Terminal • drckgomz" };
 
-// ✅ Only terminal gets this (prevents iOS focus-zoom)
 export const viewport = {
   width: "device-width",
   initialScale: 1,
@@ -17,15 +14,17 @@ export const viewport = {
 export default function TerminalLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="bg-black text-white overflow-hidden"
-      style={{
-        // ✅ The whole terminal route uses the "real" viewport height
-        height: "var(--app-vh, 100dvh)",
-        minHeight: "var(--app-vh, 100dvh)",
-      }}
+      // ✅ FIXED viewport container prevents iOS "push down / black gap"
+      className="fixed inset-0 bg-black text-white overflow-hidden"
+      style={{ height: "var(--app-vh, 100dvh)" }}
     >
       <VHSetter />
       {children}
+
+      {/* ✅ Terminal route only: lock html/body scrolling */}
+      <style>{`
+        html, body { height: 100%; overflow: hidden; }
+      `}</style>
     </div>
   );
 }
