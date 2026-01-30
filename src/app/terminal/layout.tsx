@@ -16,8 +16,7 @@ export default function TerminalLayout({ children }: { children: React.ReactNode
     <div
       className="bg-black text-white overflow-hidden"
       style={{
-        height: "100svh",
-        paddingBottom: "var(--kb, 0px)",
+        height: "100svh", // stable viewport height
       }}
     >
       <KeyboardInset />

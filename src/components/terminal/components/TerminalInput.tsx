@@ -16,7 +16,9 @@ type Props = {
   historyIndex: number;
   setHistoryIndex: (n: number) => void;
   setInputFromHistory: (cmd: string) => void;
+  onAnyFocus?: () => void;
 };
+
 
 export default function TerminalInput({
   input,
@@ -27,6 +29,7 @@ export default function TerminalInput({
   historyIndex,
   setHistoryIndex,
   setInputFromHistory,
+  onAnyFocus,
 }: Props) {
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
@@ -70,6 +73,7 @@ export default function TerminalInput({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
+          onFocus={() => onAnyFocus?.()}
           className="w-full bg-transparent outline-none text-prompt-color border-0 pl-2 text-[16px] md:text-base"
           autoCapitalize="none"
           autoCorrect="off"
@@ -78,6 +82,7 @@ export default function TerminalInput({
           aria-label="Terminal input"
           inputMode="text"
         />
+
       </form>
     </div>
   );
