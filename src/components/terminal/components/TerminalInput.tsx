@@ -19,6 +19,9 @@ type Props = {
   onAnyFocus?: () => void;
 };
 
+const isIOS =
+  typeof navigator !== "undefined" &&
+  /iP(hone|od|ad)/.test(navigator.userAgent);
 
 export default function TerminalInput({
   input,
@@ -55,12 +58,22 @@ export default function TerminalInput({
     }
   }
 
+  function handleFocus() {
+    onAnyFocus?.();
+
+    // iOS Safari often nudges layout when focusing an input.
+    // This snaps it back without breaking typing.
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+    });
+  }
+
   return (
     <div
       id="input-line"
       className="flex items-center px-4 py-2 border-t border-white/10 bg-black/40"
       style={{
-        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 18px)",
       }}
     >
       <span className="text-prompt-color font-bold text-base md:text-lg mr-2">&gt;</span>
@@ -73,7 +86,7 @@ export default function TerminalInput({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          onFocus={() => onAnyFocus?.()}
+          onFocus={handleFocus}
           className="w-full bg-transparent outline-none text-prompt-color border-0 pl-2 text-[16px] md:text-base"
           autoCapitalize="none"
           autoCorrect="off"
@@ -81,8 +94,8 @@ export default function TerminalInput({
           spellCheck={false}
           aria-label="Terminal input"
           inputMode="text"
+          autoFocus={!isIOS} // ✅ critical: don’t autoFocus on iOS
         />
-
       </form>
     </div>
   );

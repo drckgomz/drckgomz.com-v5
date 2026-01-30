@@ -1,6 +1,7 @@
 // src/app/terminal/layout.tsx
+// src/app/terminal/layout.tsx
 import type { Metadata } from "next";
-import KeyboardInset from "@/components/terminal/components/KeyboardInset";
+import VHSetter from "@/components/terminal/components/VHSetter";
 
 export const metadata: Metadata = { title: "Terminal • drckgomz" };
 
@@ -13,14 +14,14 @@ export const viewport = {
 
 export default function TerminalLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="bg-black text-white overflow-hidden"
-      style={{
-        height: "100svh", // stable viewport height
-      }}
-    >
-      <KeyboardInset />
+    <div className="fixed inset-0 bg-black text-white overflow-hidden" style={{ height: "100svh" }}>
+      <VHSetter />
       {children}
+
+      <style>{`
+        html, body { height: 100%; overflow: hidden; }
+        body { overscroll-behavior: none; }
+      `}</style>
     </div>
   );
 }

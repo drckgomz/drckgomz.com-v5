@@ -52,7 +52,7 @@ export default function VideoBackground({ cycleMs = 0 }: Props) {
   const selectedMp4 = selected.replace(".webm", ".mp4");
 
   return (
-    <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+    <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden" style={{ height: "100svh" }}>
       {mode === "image" ? (
         <img src={STATIC_IMG} alt="Background" className="w-full h-full object-cover" />
       ) : (

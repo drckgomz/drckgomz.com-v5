@@ -49,18 +49,6 @@ export default function TerminalShell() {
   const [historyIndex, setHistoryIndex] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // ✅ focus without iOS scrolling the page
-  React.useEffect(() => {
-    const t = setTimeout(() => {
-      try {
-        inputRef.current?.focus?.({ preventScroll: true } as any);
-      } catch {
-        inputRef.current?.focus?.();
-      }
-    }, 0);
-    return () => clearTimeout(t);
-  }, []);
-
   // ✅ if user taps anywhere in the terminal area, refocus without scroll jump
   const refocus = React.useCallback(() => {
     try {
@@ -69,6 +57,12 @@ export default function TerminalShell() {
       inputRef.current?.focus?.();
     }
   }, []);
+
+  const handleAnyFocus = React.useCallback(() => {
+    // extra safety: force the viewport back to top
+    requestAnimationFrame(() => window.scrollTo(0, 0));
+  }, []);
+
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -122,13 +116,13 @@ export default function TerminalShell() {
       <main
         className="relative z-10 mx-auto w-full max-w-xl px-4"
         // ✅ tap anywhere in the shell: keep input focused without causing scroll jump
-        onPointerDown={(e) => {
-          // don't steal focus from buttons/inputs etc.
+        onClick={(e) => {
           const t = e.target as HTMLElement | null;
           const tag = t?.tagName;
           if (tag && /^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(tag)) return;
           refocus();
         }}
+
       >
         {/* space between header and terminal */}
         <div className="mt-8 sm:mt-10" />
@@ -155,7 +149,7 @@ export default function TerminalShell() {
             historyIndex={historyIndex}
             setHistoryIndex={setHistoryIndex}
             setInputFromHistory={(cmd) => setInput(cmd)}
-            onAnyFocus={refocus}
+            onAnyFocus={handleAnyFocus}
           />
         </div>
 
