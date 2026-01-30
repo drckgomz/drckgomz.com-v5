@@ -1,5 +1,4 @@
-// frontend/src/features/terminal/components/TerminalOutput.tsx
-
+// src/components/terminal/components/TerminalOutput.tsx
 "use client";
 
 import * as React from "react";
@@ -15,9 +14,9 @@ export default function TerminalOutput({ lines }: { lines: Line[] }) {
 
   return (
     <div
-      id="terminal-output"
       ref={outputRef}
-      className="text-sm md:text-base leading-6 whitespace-pre-wrap text-prompt-color p-6 h-[30vh] overflow-y-auto font-bold"
+      className="text-xs sm:text-sm leading-5 whitespace-pre-wrap text-prompt-color px-4 py-3 h-[260px] overflow-y-auto font-bold"
+      style={{ WebkitOverflowScrolling: "touch" }}
     >
       {lines.map((l, i) => (l ? <div key={i}>{l.text ?? ""}</div> : null))}
     </div>

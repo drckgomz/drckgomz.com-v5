@@ -10,7 +10,10 @@ export async function requireAdmin() {
     redirect("/sign-in?redirect_url=/admin");
   }
 
-  if (profile.role?.toLowerCase() !== "admin") {
+  const role = (profile.role || "").toLowerCase();
+  const isAdmin = role === "admin" || Boolean((profile as any).is_owner) || Boolean((profile as any).is_whitelist_admin);
+
+  if (!isAdmin) {
     redirect("/blog");
   }
 

@@ -1,6 +1,6 @@
 // src/lib/admin/getAdminPost.ts
 import "server-only";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin.server";
 import { normalizeMaybeS3Url } from "@/lib/blog/media";
 
 export type AdminPost = {
@@ -18,17 +18,23 @@ export type AdminPost = {
 };
 
 export async function getAdminPostBySlug(slug: string): Promise<AdminPost | null> {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin();
 
   // get post
   const { data: post, error } = await supabase
     .from("posts")
     .select("id, slug, title, excerpt, content, status, date, thumbnail_url, created_at, updated_at")
     .eq("slug", slug)
-    .single();
+    .maybeSingle();
 
   if (error || !post) {
-    console.error("[getAdminPostBySlug] post error", error);
+    console.error("[getAdminPostBySlug] post error", {
+      message: (error as any)?.message,
+      code: (error as any)?.code,
+      details: (error as any)?.details,
+      hint: (error as any)?.hint,
+      slug,
+    });
     return null;
   }
 
@@ -40,7 +46,13 @@ export async function getAdminPostBySlug(slug: string): Promise<AdminPost | null
     .order("idx", { ascending: true });
 
   if (mediaErr) {
-    console.error("[getAdminPostBySlug] media error", mediaErr);
+    console.error("[getAdminPostBySlug] media error", {
+      message: (mediaErr as any)?.message,
+      code: (mediaErr as any)?.code,
+      details: (mediaErr as any)?.details,
+      hint: (mediaErr as any)?.hint,
+      post_id: post.id,
+    });
   }
 
   const normalizedPost = {

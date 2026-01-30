@@ -1,6 +1,6 @@
-// frontend/src/features/terminal/components/TerminalInput.tsx
-
+// src/components/terminal/components/TerminalInput.tsx
 "use client";
+
 import * as React from "react";
 
 type InputRef =
@@ -18,14 +18,23 @@ type Props = {
   setInputFromHistory: (cmd: string) => void;
 };
 
+const isIOS =
+  typeof navigator !== "undefined" &&
+  /iP(hone|od|ad)/.test(navigator.userAgent);
+
 export default function TerminalInput({
-  input, setInput, handleSubmit, inputRef, history, historyIndex, setHistoryIndex, setInputFromHistory,
+  input,
+  setInput,
+  handleSubmit,
+  inputRef,
+  history,
+  historyIndex,
+  setHistoryIndex,
+  setInputFromHistory,
 }: Props) {
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleSubmit(e as unknown as React.FormEvent);
-    } else if (e.key === "ArrowUp") {
+    // ✅ don't handle Enter here (iOS can be weird). Only history keys.
+    if (e.key === "ArrowUp") {
       e.preventDefault();
       if (historyIndex > 0) {
         const i = historyIndex - 1;
@@ -45,9 +54,21 @@ export default function TerminalInput({
     }
   }
 
+  function handleFocus() {
+    // ✅ snap back without re-focusing (no focus loop)
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+  }
+
   return (
-    <div id="input-line" className="flex items-center px-4 py-2">
+    <div
+      id="input-line"
+      className="flex items-center px-4 py-2 border-t border-white/10 bg-black/40"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 18px)" }}
+    >
       <span className="text-prompt-color font-bold text-base md:text-lg mr-2">&gt;</span>
+
       <form onSubmit={handleSubmit} className="w-full">
         <input
           ref={inputRef}
@@ -56,12 +77,22 @@ export default function TerminalInput({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          className="w-full bg-transparent outline-none text-prompt-color border-0 pl-2 text-sm md:text-base"
-          autoFocus
+          onFocus={handleFocus}
+          className="w-full bg-transparent outline-none text-prompt-color border-0 pl-2 text-[16px] md:text-base"
+          autoCapitalize="none"
+          autoCorrect="off"
           autoComplete="off"
           spellCheck={false}
           aria-label="Terminal input"
+          inputMode="text"
+          enterKeyHint="go"
+          autoFocus={!isIOS} // ✅ don't autofocus on iOS
         />
+
+        {/* ✅ IMPORTANT: makes iOS “Go/Return” submit reliably */}
+        <button type="submit" className="sr-only" tabIndex={-1} aria-hidden="true">
+          submit
+        </button>
       </form>
     </div>
   );

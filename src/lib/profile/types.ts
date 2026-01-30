@@ -7,4 +7,8 @@ export type UserProfile = {
   avatar_color: string;
   first_name: string;
   last_name: string;
+
+  // add these (exist in DB schema)
+  is_owner?: boolean;
+  is_whitelist_admin?: boolean;
 };
