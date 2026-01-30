@@ -11,16 +11,21 @@ export default function VHSetter() {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         const vv = window.visualViewport;
-        const h = vv?.height ?? window.innerHeight;
-        const w = vv?.width ?? window.innerWidth;
 
-        document.documentElement.style.setProperty("--app-vh", `${h}px`);
-        document.documentElement.style.setProperty("--app-vw", `${w}px`);
+        const vh = vv?.height ?? window.innerHeight;
+        const vw = vv?.width ?? window.innerWidth;
+
+        // ✅ keyboard height approximation (works well on iOS Safari/Chrome)
+        // innerHeight stays "layout viewport", vv.height shrinks when keyboard shows
+        const keyboard = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+
+        document.documentElement.style.setProperty("--app-vh", `${vh}px`);
+        document.documentElement.style.setProperty("--app-vw", `${vw}px`);
+        document.documentElement.style.setProperty("--kb", `${keyboard}px`);
       });
     };
 
     setVars();
-
     window.visualViewport?.addEventListener("resize", setVars);
     window.visualViewport?.addEventListener("scroll", setVars);
     window.addEventListener("resize", setVars);

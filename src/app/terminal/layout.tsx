@@ -14,16 +14,22 @@ export const viewport = {
 export default function TerminalLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
-      // ✅ FIXED viewport container prevents iOS "push down / black gap"
       className="fixed inset-0 bg-black text-white overflow-hidden"
-      style={{ height: "var(--app-vh, 100dvh)" }}
+      style={{
+        height: "var(--app-vh, 100dvh)",
+        // ✅ this is the key: when keyboard opens, we “make room” instead of iOS scrolling the page
+        paddingBottom: "var(--kb, 0px)",
+      }}
     >
       <VHSetter />
+
+      {/* route content */}
       {children}
 
-      {/* ✅ Terminal route only: lock html/body scrolling */}
+      {/* keep the *page* from scrolling; only internal terminal output should scroll */}
       <style>{`
         html, body { height: 100%; overflow: hidden; }
+        body { overscroll-behavior: none; }
       `}</style>
     </div>
   );

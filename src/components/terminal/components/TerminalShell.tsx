@@ -161,13 +161,15 @@ export default function TerminalShell() {
 
   return (
     <>
-      <main className="relative z-10 mx-auto w-full max-w-3xl h-full px-4 pt-20 sm:pt-28 pb-4">
+      <main className="relative z-10 mx-auto w-full max-w-xl px-4">
+        {/* ✅ space between header and terminal */}
+        <div className="mt-8 sm:mt-10" />
+
         <div
-          // ✅ Smaller box + doesn’t try to become the whole page
-          className="mx-auto w-full rounded-lg border border-prompt-color bg-black/55 overflow-hidden"
+          className="mx-auto w-full rounded-lg border border-prompt-color bg-black/55 overflow-hidden flex flex-col"
           style={{
-            // ✅ cap height so it never becomes massive on mobile
-            height: "min(360px, 46dvh)",
+            // ✅ smaller + responsive
+            height: "clamp(220px, 34dvh, 320px)",
           }}
         >
           <TerminalOutput lines={lines} />
