@@ -1,0 +1,46 @@
+{
+  "manifestVersion": 1,
+  "purpose": "offline-validation-only",
+  "target": {
+    "project": "jolly-poetry-87664309",
+    "branch": "br-nameless-dust-bewpmr4r",
+    "endpoint": "ep-sparkling-sun-bedq0ozn",
+    "hostname": "ep-sparkling-sun-bedq0ozn.c-9.us-east-2.aws.neon.tech",
+    "database": "neondb",
+    "postgresMajor": "18"
+  },
+  "priorPhase3FManifestSha256": "2e101ed07f0dc9d044a76f63f7d87d1e7055faaf2381eeabad9b2babf781e142",
+  "journalSha256": "124ec5a5bffb0daab3fbbef47087b64bf87ca9bca8b2f69958e814c4d4c52cbc",
+  "migrations": [
+    {
+      "tag": "0000_petite_loki",
+      "sha256": "201022ebf1346f754df936a2139075c63abde28eea6be065d24214f6a8e331bc",
+      "snapshotSha256": "32e826696e22c2ac418c20cd309c97e99d925f01b505b834a413bc71bd977ed0"
+    },
+    {
+      "tag": "0001_bitter_tiger_shark",
+      "sha256": "0ae7871fc214b53788fbfb0ef6081eb2cd89fc20ff5e2d7ef93f7a6f1dc15bbc",
+      "snapshotSha256": "ccfd1b3bf1a3718c9d7d27c2b781b4bfd42cf6e903ce6abfcc0b2763cde017a0"
+    },
+    {
+      "tag": "0002_many_kingpin",
+      "sha256": "582506469c83811bd9c00f313a9d23f64441234953b53efdf248549fb128f0be",
+      "snapshotSha256": "0472d6489b5b9906e246aca41db28f01f5bd368d6a9a1825ae790098aaa0924a"
+    },
+    {
+      "tag": "0003_early_blizzard",
+      "sha256": "42d90a2e9812f63638359a109a064878bfa1c06444c08c5acbca19698cb9f47f",
+      "snapshotSha256": "568287431a012e8579a20af54e2d2f6f72a04ed9efd0ab56c0504c43a491d39b"
+    },
+    {
+      "tag": "0004_sour_catseye",
+      "sha256": "ef5ed1cd7b1acea20a0a25efb664cf1b1119ce141259b0ede082aa15f24c0377",
+      "snapshotSha256": "2a297bef16449caf9df7b012604e98abfe80c621e2b21f6b21ca722e85b59240"
+    },
+    {
+      "tag": "0005_session_digest_adapter_default",
+      "sha256": "966d65b038eddfd1f12ceb47e17140e2c4252b848174429e218387070b6dbe14",
+      "snapshotSha256": "1f58eaf03cd4962941b4494d9101f0e4fc8235fecc5d9e9830ba188fadae51b3"
+    }
+  ]
+}

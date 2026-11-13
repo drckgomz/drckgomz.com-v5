@@ -16,6 +16,8 @@ export default function DotsCanvas({ className }: Props) {
     const ctxEl = canvasEl.getContext("2d");
     if (!ctxEl) return;
 
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
     const dotSpacing = 26;
     const dotRadius = 1.6;
     const amplitude = 5;
@@ -64,17 +66,23 @@ export default function DotsCanvas({ className }: Props) {
       }
 
       time += waveSpeed;
-      raf = window.requestAnimationFrame(render);
+      if (!reducedMotion.matches && !document.hidden) raf = window.requestAnimationFrame(render);
     };
 
-    resize();
-    render();
-
-    window.addEventListener("resize", resize, { passive: true });
+    const refresh = () => {
+      window.cancelAnimationFrame(raf);
+      resize(); render();
+    };
+    refresh();
+    reducedMotion.addEventListener("change", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("resize", refresh, { passive: true });
 
     return () => {
       window.cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
+      window.removeEventListener("resize", refresh);
+      reducedMotion.removeEventListener("change", refresh);
+      document.removeEventListener("visibilitychange", refresh);
     };
   }, []);
 

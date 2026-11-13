@@ -1,0 +1,18 @@
+# Phase 3E local test matrix
+
+| Boundary or behavior | Local coverage | Current evidence | Missing before cutover |
+|---|---|---|---|
+| Missing/invalid database settings | `tests/phase3e/auth-boundaries.test.ts` | Pure config tests; no URL/secret values emitted | Validate provider settings against approved development branch without logging the URL |
+| Closed Better Auth registration and sign-in route | `better-auth.ts`, `/sign-in`, `/sign-up`, shared auth provider | Code config disables signup; Better Auth page is sign-in only; existing Clerk route remains default | Browser test sign-in, sign-out, return URL validation, and closed registration against an isolated test DB |
+| Client/server session-provider parity | `RootAuthProvider`, `AuthSessionContext`, Clerk and Better Auth bridges | Shared hooks now cover current app client use sites; existing server policy tests pass with Clerk default | Test Better Auth session client updates, tab revocation, expiry and profile-disabled transitions |
+| Better Auth owner bootstrap policy | Same TS suite; `owner-bootstrap-policy.ts` | Requires explicit approval, verified identity, no owner rows, and evidence reference | DB transaction/concurrency integration test with a disposable DB |
+| Admin/imported identity authorization | Same TS suite; `policy.ts` | Disabled imported admin claims are denied; access derives from active app roles/capabilities | Better Auth request/session tests and database role mutation tests |
+| Public/private/draft/archived/deleted blog access | Same TS suite; `policy.ts`, `repositories/blog.ts` | Pure authorization checks plus query clauses in repository | Real repository tests with mocked query layer and then isolated DB fixtures |
+| Public project/detail compatibility | `repositories/projects.ts` + `projects/public.ts` | Opt-in read adapter keeps UUID lookup, public-state gate, sanitizer, media ordering/fallback | Fixture parity across list/detail and existing routes; live DB render parity |
+| Legacy backup shape and stable mapping | `tests/phase3e/test_inspector.py`, `test_target_mapping.py`, `legacy_mapping.py` | Existing backup parser tests plus 3 deterministic synthetic transform tests; excludes password/reset fields and never elevates | New authoritative current-v5 snapshot comparison; raw-content fidelity assertion in the imported dev branch |
+| Legacy relationships, duplicate/orphan detection | `validate_migration.py` | In-memory aggregate validator and previous synthetic tests | Source/target FK and source-key ledger checks after development import |
+| Offline schema definition | `drizzle.config.ts`, `drizzle/0000_petite_loki.sql` | `pnpm db:generate` completes against fixed loopback placeholder | Review/apply SQL only after branch identity verification and explicit approval |
+| HTTP authorization / CSRF | Existing `tests/security/*.test.cjs`, `tests/integration/*.test.cjs` | Existing suites predate DB adapter; no DB-backed Better Auth route test claimed | Auth route request tests with deterministic session store, SameSite/CSRF adversarial coverage |
+| Homepage sections / admin CMS writes / terminal / user management | Existing Supabase/Clerk paths | Still legacy implementations; no replacement claimed | Migrate each repository independently with DTO parity and authorization tests |
+
+Run local checks with `pnpm test:phase3e`, `pnpm test:security`, `pnpm test:integration`, `pnpm exec tsc --noEmit --incremental false`, and `pnpm db:generate`. The TypeScript Phase 3E suite compiles with `tsc` and runs with Node's built-in runner because `tsx` attempts a local IPC socket and fails `EPERM` in this sandbox. No test here connects to Neon or Supabase.

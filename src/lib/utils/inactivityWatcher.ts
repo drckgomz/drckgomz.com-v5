@@ -18,7 +18,6 @@ export function startInactivityLogout(
 
   let lastActivity = Date.now();
   let armed = false;
-  let tickId: number | undefined;
 
   const markActivity = () => {
     lastActivity = Date.now();
@@ -38,7 +37,7 @@ export function startInactivityLogout(
   }, armDelayMs);
 
   // Use an interval (handles sleeping tabs better than long setTimeout)
-  tickId = window.setInterval(async () => {
+  const tickId = window.setInterval(async () => {
     if (!armed) return;
     // Don’t time out while the page is hidden; wait until visible again
     if (document.visibilityState !== "visible") return;

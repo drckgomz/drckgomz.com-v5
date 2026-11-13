@@ -32,7 +32,7 @@ function deriveFallbackLabel(m: NormalizedMedia, i: number) {
 }
 
 export default function MediaList({
-  postId,
+  busy = false,
   mediaList,
   setMediaList,
   onInsert,
@@ -45,8 +45,9 @@ export default function MediaList({
   onReorderSave,
 }: {
   postId: string;
+  busy?: boolean;
   mediaList: NormalizedMedia[];
-  setMediaList: (list: NormalizedMedia[]) => void;
+  setMediaList: React.Dispatch<React.SetStateAction<NormalizedMedia[]>>;
   onInsert: (id: string) => void;
   onRemove: (id: string) => void;
   onUpload: (file: File) => void;
@@ -61,18 +62,16 @@ export default function MediaList({
   const [savingId, setSavingId] = React.useState<string | null>(null);
   const [dropping, setDropping] = React.useState(false);
 
-  // debounce reorder saves
-  const reorderTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const queueReorderSave = React.useCallback(
-    (list: NormalizedMedia[]) => {
-      if (!onReorderSave || !postId) return;
-      if (reorderTimer.current) clearTimeout(reorderTimer.current);
-      reorderTimer.current = setTimeout(() => {
-        onReorderSave(list.map((m) => ({ id: m.id })));
-      }, 350);
-    },
-    [onReorderSave, postId]
-  );
+  const reordered = React.useRef(mediaList);
+  const [error, setError] = React.useState("");
+  const moveMedia = (index: number, direction: -1 | 1) => {
+    const next = [...mediaList];
+    const target = index + direction;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    setMediaList(next);
+    onReorderSave?.(next.map(item => ({ id: item.id })));
+  };
 
   const fileRef = React.useRef<HTMLInputElement>(null);
   const pickFile = () => fileRef.current?.click();
@@ -87,7 +86,7 @@ export default function MediaList({
     e.preventDefault();
     setDropping(false);
     const f = e.dataTransfer.files?.[0];
-    if (f && f.type.startsWith("image/")) onUpload(f);
+    if (!busy && f && f.type.startsWith("image/")) onUpload(f);
   };
 
   const startEdit = (m: NormalizedMedia) => {
@@ -100,17 +99,15 @@ export default function MediaList({
     setDraft("");
   };
 
+  const captionPending = React.useRef(false);
   const saveCaption = async (id: string, captionRaw: string) => {
+    if (captionPending.current) return;
+    captionPending.current = true;
+    setError("");
     setSavingId(id);
 
     const clean = (captionRaw ?? "").toString().trim();
     const newCaption: string | null = clean.length ? clean : null;
-
-    const before = mediaList;
-    const next: NormalizedMedia[] = before.map((m) =>
-      m.id === id ? { ...m, caption: newCaption } : m
-    );
-    setMediaList(next);
 
     try {
       const res = await fetch(`/api/admin/media/${encodeURIComponent(id)}`, {
@@ -126,30 +123,18 @@ export default function MediaList({
 
       const json = await res.json().catch(() => ({}));
       const saved = json?.media;
-
-      if (saved && typeof saved === "object") {
-        const canonicalCaption =
-          saved.caption === null || saved.caption === undefined ? null : String(saved.caption);
-
-        const patched: NormalizedMedia[] = next.map((m) =>
-          m.id === id ? { ...m, caption: canonicalCaption } : m
-        );
-        setMediaList(patched);
-
-        const updated = patched.find((x) => x.id === id);
-        if (updated && onCaptionChange) onCaptionChange(updated, canonicalCaption);
-      } else {
-        const updated = next.find((x) => x.id === id);
-        if (updated && onCaptionChange) onCaptionChange(updated, newCaption);
-      }
+      const canonicalCaption = saved?.caption === null || typeof saved?.caption === "string" ? saved.caption : newCaption;
+      setMediaList(current => current.map(item => item.id === id ? { ...item, caption: canonicalCaption } : item));
+      const updated = mediaList.find(item => item.id === id);
+      if (updated) onCaptionChange?.(updated, canonicalCaption);
 
       setEditingId(null);
       setDraft("");
     } catch (e) {
       console.warn(e);
-      setMediaList(before);
-      alert("Failed to save caption.");
+      setError("Caption was not saved. Your draft is retained; please retry.");
     } finally {
+      captionPending.current = false;
       setSavingId(null);
     }
   };
@@ -161,12 +146,14 @@ export default function MediaList({
 
   return (
     <section className="space-y-3">
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {/* Actions */}
       <div className="grid gap-2">
         <Button
           type="button"
           variant="secondary"
-          className="w-full bg-white/5 text-white border border-white/25 hover:bg-white hover:text-black"
+          className="w-full bg-muted/40 text-foreground border border-border hover:bg-accent hover:text-accent-foreground"
+          disabled={busy}
           onClick={async () => {
             const url = prompt("Enter YouTube or Instagram URL:");
             if (url) onAddLink(url, () => {});
@@ -175,14 +162,15 @@ export default function MediaList({
           + Add YouTube / Instagram
         </Button>
 
-        <Button type="button" className="w-full bg-white/5 border border-white/25 hover:bg-white hover:text-black" onClick={pickFile}>
+        <Button type="button" className="w-full bg-muted/40 text-foreground border border-border hover:bg-accent hover:text-accent-foreground" onClick={pickFile} disabled={busy}>
           Upload image
         </Button>
 
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          disabled={busy}
+          accept="image/png,image/jpeg,image/gif,image/webp"
           className="hidden"
           onChange={onFile}
           aria-label="Upload image"
@@ -199,9 +187,9 @@ export default function MediaList({
         onDragLeave={() => setDropping(false)}
         className={cn(
           "rounded-xl border border-dashed p-3 text-xs transition-colors",
-          "border-border bg-white/5 text-white/50",
+          "border-border bg-muted/40 text-muted-foreground",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          dropping && "border-ring bg-muted/20 text-white"
+          dropping && "border-ring bg-muted/20 text-foreground"
         )}
       >
         Drag &amp; drop an image here
@@ -216,11 +204,13 @@ export default function MediaList({
         </div>
       ) : (
         <ReactSortable
+          disabled={busy || !!savingId}
           list={mediaList}
           setList={(lst) => {
-            setMediaList(lst as NormalizedMedia[]);
-            queueReorderSave(lst as NormalizedMedia[]);
+            reordered.current = lst;
+            setMediaList(lst);
           }}
+          onEnd={() => onReorderSave?.(reordered.current.map(item => ({ id: item.id })))}
           animation={150}
           className="space-y-2"
         >
@@ -242,8 +232,8 @@ export default function MediaList({
               <div
                 key={m.id}
                 className={cn(
-                  "flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-3 shadow-sm",
-                  "transition-colors hover:border-white/25"
+                  "flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-3 shadow-sm",
+                  "transition-colors hover:border-border"
                 )}
               >
                 {thumb ? (
@@ -265,6 +255,8 @@ export default function MediaList({
                     {isEditing ? (
                       <Input
                         autoFocus
+                        aria-label={`Caption for media ${i + 1}`}
+                        maxLength={2000}
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}
                         onBlur={commit}
@@ -273,21 +265,22 @@ export default function MediaList({
                           if (e.key === "Escape") cancelEdit();
                         }}
                         disabled={savingId === m.id}
-                        className="h-8 text-xs text-white"
+                        className="h-8 text-xs text-foreground"
                         placeholder="Caption…"
                       />
                     ) : (
                       <button
                         type="button"
                         onClick={() => startEdit(m)}
-                        className="block w-full truncate text-left text-xs text-white font-medium hover:underline"
+                        disabled={busy || !!savingId}
+                        className="block w-full truncate text-left text-xs text-foreground font-medium hover:underline"
                         title="Click to edit caption"
                       >
                         {display}
                       </button>
                     )}
 
-                    <div className="mt-1 flex items-center gap-2 text-[10px] text-white/70">
+                    <div className="mt-1 flex items-center gap-2 text-[10px] text-foreground/70">
                       <span className="uppercase tracking-wide">
                         {m.type === "image" ? "image" : m.type}
                       </span>
@@ -301,11 +294,13 @@ export default function MediaList({
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
+                    <Button type="button" variant="outline" size="sm" aria-label={`Move media ${i + 1} up`} disabled={i === 0 || busy || !!savingId} onClick={() => moveMedia(i, -1)}>↑</Button>
+                    <Button type="button" variant="outline" size="sm" aria-label={`Move media ${i + 1} down`} disabled={i === mediaList.length - 1 || busy || !!savingId} onClick={() => moveMedia(i, 1)}>↓</Button>
                     <Button
                       type="button"
                       variant="secondary"
                       size="sm"
-                      className="h-7 px-2 text-xs border hover:text-white hover:bg-black"
+                      className="h-7 px-2 text-xs border hover:text-foreground hover:bg-accent"
                       onClick={() => onInsert(m.id)}
                       disabled={!!savingId}
                     >
@@ -317,7 +312,8 @@ export default function MediaList({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-7 px-2 text-xs hover:text-white hover:bg-black"
+                        className="h-7 px-2 text-xs hover:text-foreground hover:bg-accent"
+                        disabled={busy}
                         onClick={() => onSetThumbnail({ id: m.id, url: m.url })}
                         title="Use as post thumbnail"
                       >
@@ -329,7 +325,8 @@ export default function MediaList({
                       type="button"
                       variant="destructive"
                       size="sm"
-                      className="h-7 px-2 text-xs border border-transparent hover:bg-red-800 hover:border-red-500"
+                      className="h-7 px-2 text-xs border border-transparent hover:bg-destructive/90 hover:border-destructive"
+                      disabled={busy || !!savingId}
                       onClick={() => onRemove(m.id)}
                     >
                       Remove

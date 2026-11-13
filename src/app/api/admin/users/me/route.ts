@@ -1,48 +1,30 @@
-// src/app/api/admin/users/me/route.ts
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { auth } from "@clerk/nextjs/server";
+import { getViewer } from "@/lib/auth/viewer";
 import { requireAdminApi } from "@/lib/admin/requireAdminApi";
-
-function getSupabaseAdmin() {
-  const url = process.env.SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceRole) throw new Error("Missing Supabase env");
-  return createClient(url, serviceRole, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
+import { isMissingConfigurationError } from "@/lib/db/config";
 
 export async function GET() {
-  // still enforce "must be admin to use this endpoint"
   const denied = await requireAdminApi();
   if (denied) return denied;
-
-  // ✅ this is the *current* signed-in clerk user
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ me: null }, { status: 401 });
-
-  const supabase = getSupabaseAdmin();
-
-  const { data, error } = await supabase
-    .from("user_profiles")
-    .select("id,email,role,is_owner,is_banned,can_view_private")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!data) return NextResponse.json({ me: null }, { status: 404 });
-
-  const role = String(data.role || "user");
-  const me = {
-    id: String(data.id),
-    email: String(data.email || "").toLowerCase(),
-    role,
-    is_admin: role.toLowerCase() === "admin" || !!data.is_owner,
-    is_owner: !!data.is_owner,
-    is_banned: !!data.is_banned,
-    can_view_private: !!data.can_view_private,
-  };
-
-  return NextResponse.json({ me });
+  try {
+    const { userId, profile } = await getViewer();
+    if (!userId || !profile) return NextResponse.json({ me: null }, { status: 401 });
+    const role = profile.role || "user";
+    return NextResponse.json({
+      me: {
+        id: profile.id,
+        email: profile.email.toLowerCase(),
+        role,
+        is_admin: role.toLowerCase() === "admin" || profile.is_owner === true || role.toLowerCase() === "content_admin",
+        is_owner: profile.is_owner === true,
+        is_banned: profile.is_banned,
+        can_view_private: profile.can_view_private,
+      },
+    }, { headers: { "Cache-Control": "private, no-store" } });
+  } catch (error) {
+    if (isMissingConfigurationError(error)) {
+      return NextResponse.json({ error: "Authentication is not configured", missing: error.missing }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    }
+    return NextResponse.json({ error: "Profile lookup failed" }, { status: 500, headers: { "Cache-Control": "no-store" } });
+  }
 }

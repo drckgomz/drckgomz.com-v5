@@ -20,7 +20,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("user_profiles")
     .select(
-      "id,email,username,first_name,last_name,role,can_view_private,is_owner,is_banned,banned_at,banned_reason,enabled,created_at,updated_at,avatar_color"
+      "id,email,username,first_name,last_name,role,can_view_private,is_owner,is_whitelist_admin,is_banned,banned_at,banned_reason,enabled,created_at,updated_at,avatar_color"
     )
     .order("email", { ascending: true });
 

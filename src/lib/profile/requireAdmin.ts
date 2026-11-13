@@ -1,19 +1,7 @@
-// src/lib/profile/requireAdmin.ts
 import "server-only";
-import { redirect } from "next/navigation";
-import { getUserProfile } from "@/lib/profile/getUserProfile";
+import { requireAdmin as requireAdminProfile } from "@/lib/admin/requireAdmin";
 
+/** Compatibility wrapper for the dashboard; authorization is identical to its children. */
 export async function requireAdmin() {
-  const profile = await getUserProfile();
-
-  if (!profile) {
-    redirect("/sign-in?redirect_url=/admin");
-  }
-
-  const role = (profile.role || "").toLowerCase();
-  if (role !== "admin") {
-    return { profile, isAdmin: false as const };
-  }
-
-  return { profile, isAdmin: true as const };
+  return { profile: await requireAdminProfile(), isAdmin: true as const };
 }

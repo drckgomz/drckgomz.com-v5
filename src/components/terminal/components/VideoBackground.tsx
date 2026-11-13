@@ -1,76 +1,61 @@
 // frontend/src/features/terminal/components/VideoBackground.tsx
 
 "use client";
+"use client";
+
 import * as React from "react";
+import { useReducedMotion } from "framer-motion";
 
-type Props = { cycleMs?: number };
+type Props = { sources?: readonly string[]; poster?: string; objectPosition?: string };
 
-const BASE =
-  process.env.NEXT_PUBLIC_S3_MEDIA_BASE ??
-  "https://s3.us-east-1.amazonaws.com/www.drckgomz.com";
+function subscribeMotionPreference(callback: () => void) {
+  window.addEventListener("resize", callback);
+  const queries = ["(prefers-reduced-motion: reduce)", "(prefers-reduced-data: reduce)"].map((query) => window.matchMedia(query));
+  for (const query of queries) query.addEventListener("change", callback);
+  return () => {
+    window.removeEventListener("resize", callback);
+    for (const query of queries) query.removeEventListener("change", callback);
+  };
+}
 
-const SOURCES = [`${BASE}/dockBackground.webm`, `${BASE}/patio2Background.webm`];
-const STATIC_IMG = `${BASE}/terminalBackground.jpeg`;
+function getMotionEnvironmentSnapshot() {
+  return window.innerWidth > 768 &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+    !window.matchMedia("(prefers-reduced-data: reduce)").matches;
+}
 
-export default function VideoBackground({ cycleMs = 0 }: Props) {
-  // Start in "image" mode to avoid a flash of video before detection finishes.
-  const [mode, setMode] = React.useState<"image" | "video">("image");
-  const [index, setIndex] = React.useState(0);
+function safeBackgroundUrl(value: string): boolean {
+  if (!value || value.length > 2048 || /[\u0000-\u0020\\]/.test(value) || value.startsWith("//")) return false;
+  if (value.startsWith("/") && !value.startsWith("///")) return !value.split("/").some((part) => part === ".." || part === ".");
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password;
+  } catch { return false; }
+}
 
-  // Decide image vs video once on mount (and re-run if you like on resize).
-  React.useEffect(() => {
-    const isSmall = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
-    const touch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    const uaMobile = /Mobi|Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const prefersData =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-data: reduce)").matches;
+export default function VideoBackground({ sources = [], poster, objectPosition = "50% 50%" }: Props) {
+  const reducedMotion = useReducedMotion();
+  const wideMotionEnvironment = React.useSyncExternalStore(subscribeMotionPreference, getMotionEnvironmentSnapshot, () => false);
+  const [failed, setFailed] = React.useState(false);
+  const safeSources = sources.filter(safeBackgroundUrl);
+  const safePoster = poster && safeBackgroundUrl(poster) ? poster : undefined;
 
-    // If ANY of these are true, prefer the static image.
-    const shouldUseImage = isSmall || touch || uaMobile || prefersData;
-    setMode(shouldUseImage ? "image" : "video");
-
-    // Pick next source (A→B→A…) and remember it per-visit
-    try {
-      const last = Number(localStorage.getItem("bgVideoIndex") ?? "-1");
-      const next = Number.isFinite(last) ? (last + 1) % SOURCES.length : 0;
-      setIndex(next);
-      localStorage.setItem("bgVideoIndex", String(next));
-    } catch {
-      setIndex(0);
-    }
-  }, []);
-
-  // Optional in-page rotation (disabled on image mode)
-  React.useEffect(() => {
-    if (mode === "image" || cycleMs <= 0) return;
-    const t = setInterval(() => setIndex((i) => (i + 1) % SOURCES.length), cycleMs);
-    return () => clearInterval(t);
-  }, [mode, cycleMs]);
-
-  const selected = SOURCES[index];
-  const selectedMp4 = selected.replace(".webm", ".mp4");
+  const motionAllowed = reducedMotion === false && wideMotionEnvironment;
 
   return (
-    <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden" style={{ height: "100svh" }}>
-      {mode === "image" ? (
-        <img src={STATIC_IMG} alt="Background" className="w-full h-full object-cover" />
-      ) : (
-        <video
-          key={selected}
-          playsInline
-          autoPlay
-          muted
-          loop
-          preload="auto"
-          className="w-full h-full object-cover"
-          disablePictureInPicture
-          controlsList="nodownload nofullscreen noremoteplayback"
-        >
-          <source src={selected} type="video/webm" />
-          <source src={selectedMp4} type="video/mp4" />
+    <div className="terminal-background" aria-hidden="true" inert>
+      <div className="terminal-background__fallback" />
+      {safePoster ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="terminal-background__poster" src={safePoster} alt="" style={{ objectPosition }} />
+      ) : null}
+      {motionAllowed && !failed && safeSources.length > 0 ? (
+        <video className="terminal-background__video" muted playsInline autoPlay loop preload="none"
+          poster={safePoster} style={{ objectPosition }} onError={() => setFailed(true)}>
+          {safeSources.map((src) => <source key={src} src={src} />)}
         </video>
-      )}
+      ) : null}
+      <div className="terminal-background__overlay" />
     </div>
   );
 }

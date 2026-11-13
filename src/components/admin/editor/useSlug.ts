@@ -3,20 +3,7 @@
 
 import * as React from "react";
 
-export const slugFinalize = (s: string) =>
-  s
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/(^-|-$)+/g, "");
-
-export const slugDraft = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/[^a-z0-9\- ]+/g, "")
-    .replace(/ +/g, "-")
-    .replace(/-+/g, "-");
+import { slugDraft, slugFinalize } from "@/lib/cms/slug";
 
 export function useSlugInput(
   slug: string,

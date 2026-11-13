@@ -1,27 +1,18 @@
-// src/lib/profile/requireUser.ts
+import "server-only";
 import { redirect } from "next/navigation";
-import { auth } from "@clerk/nextjs/server";
-import { supabaseAdmin } from "@/lib/supabase/admin.server";
+import { getViewer } from "@/lib/auth/viewer";
+import { isMissingConfigurationError } from "@/lib/db/config";
 
-export async function requireUserProfile(opts?: { allowBanned?: boolean }) {
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
-
-  const supabase = supabaseAdmin();
-
-  const { data: profile, error } = await supabase
-    .from("user_profiles")
-    .select("id,email,role,is_owner,is_banned,banned_reason,can_view_private")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-
-  if (!profile) redirect("/sign-in");
-
-  if (!opts?.allowBanned && profile.is_banned) {
-    redirect("/banned");
+export async function requireUserProfile() {
+  let profile;
+  try {
+    ({ profile } = await getViewer());
+  } catch (error) {
+    if (isMissingConfigurationError(error)) redirect("/service-unavailable?service=auth");
+    throw error;
   }
-
+  if (!profile) redirect("/sign-in");
+  if (profile.is_banned) redirect("/banned");
+  if (!profile.enabled) redirect("/sign-in");
   return profile;
 }

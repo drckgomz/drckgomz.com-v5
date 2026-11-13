@@ -128,7 +128,7 @@ export default function ProjectEditorPageClient({ id }: { id: string }) {
       setColor(p.color ?? "#7C3AED");
       setImageUrl(p.image_url ?? "");
       setStatus(normalizeStatus(p.status));
-      setContent(p.content ?? ""); // keep raw exactly as stored
+      setContent(p.content ?? ""); // server-sanitized legacy content
     } catch (e: any) {
       setError(e?.message || "Failed to load project");
     } finally {
@@ -156,7 +156,7 @@ export default function ProjectEditorPageClient({ id }: { id: string }) {
         image_url: imageUrl.trim() ? imageUrl.trim() : null,
 
         status,
-        content, // save raw
+        content, // validated and sanitized again by the server
       };
 
       const res = await fetch(`${API_BASE}/${project.id}`, {

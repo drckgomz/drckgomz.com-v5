@@ -8,13 +8,11 @@ export const metadata: Metadata = { title: "Terminal • drckgomz" };
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export default function TerminalLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 bg-black text-white overflow-hidden" style={{ height: "100svh" }}>
+    <div data-theme-scope="terminal" data-theme="dark" className="fixed inset-0 bg-black text-white overflow-hidden" style={{ height: "100svh" }}>
       <VHSetter />
       {children}
 

@@ -1,3 +1,4 @@
+import { parseTerminalActions } from "./actions";
 // frontend/src/features/terminal/lib/engine.ts
 
 export type Callbacks = {
@@ -41,17 +42,13 @@ export class CommandEngine {
   >();
   private RATE_WINDOW_MS = 60_000;
 
-  // LOGIN STATE
-  private loginMode = false;
-  private loginStep: "username" | "password" | "both" = "both";
-  private loginUsername = "";
-  private loginPassword = "";
-
   constructor(cb: Callbacks) {
     this.cb = cb;
   }
 
   register(cmd: EngineCommand) {
+    const actions = parseTerminalActions(cmd.actions);
+    if (!actions) return;
     const norm: EngineCommand = {
       showInHelp: true,
       enabled: true,
@@ -62,6 +59,7 @@ export class CommandEngine {
       description: "",
       ...cmd,
       name: cmd.name.toLowerCase(),
+      actions,
     };
 
     this.registry.set(norm.name, norm);
@@ -103,80 +101,13 @@ export class CommandEngine {
     return false;
   }
 
-  private resetLoginState() {
-    this.loginMode = false;
-    this.loginStep = "both";
-    this.loginUsername = "";
-    this.loginPassword = "";
-  }
-
   async execute(raw: string) {
     const input = raw.trim();
     if (!input) return;
 
-    // LOGIN MODE
-    if (this.loginMode) {
-      if (["quit", ":q", "stop"].includes(input.toLowerCase())) {
-        this.resetLoginState();
-        await this.cb.print("Login cancelled.");
-        return;
-      }
-
-      if (input.includes(" ") && this.loginStep === "both") {
-        const [username, password] = input.split(" ");
-        this.loginUsername = username;
-        this.loginPassword = password;
-      } else if (this.loginStep === "both") {
-        this.loginUsername = input;
-        this.loginStep = "password";
-        await this.cb.print("Enter password:");
-        return;
-      } else if (this.loginStep === "password") {
-        this.loginPassword = input;
-      }
-
-      if (this.loginUsername && this.loginPassword) {
-        try {
-          const res = await fetch("/api/terminal/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              username: this.loginUsername,
-              password: this.loginPassword,
-            }),
-          });
-
-          if (!res.ok) {
-            await this.cb.print("Invalid credentials. Try again.");
-            this.resetLoginState();
-            return;
-          }
-
-          const { token } = await res.json();
-          localStorage.setItem("blog_token", token);
-          await this.cb.print("Login successful. Redirecting to blog...");
-          this.cb.navigate("/blog");
-          this.resetLoginState();
-          return;
-        } catch (err) {
-          await this.cb.print("Login failed. Please try again later.");
-          this.resetLoginState();
-          return;
-        }
-      }
-
-      return;
-    }
-
-    // Special case: intercept 'blog' command
+    // The existing Clerk-protected blog route owns sign-in; never collect credentials here.
     if (input.toLowerCase() === "blog") {
-      this.loginMode = true;
-      this.loginStep = "both";
-      this.loginUsername = "";
-      this.loginPassword = "";
-      await (this.cb.typeWrite
-      ? this.cb.typeWrite("Enter user email (or 'email and password' together). Type ':q' to cancel.")
-      : this.cb.print("Enter email (or 'email and password' together). Type ':q' to cancel."));
+      this.cb.navigate("/blog");
       return;
     }
 

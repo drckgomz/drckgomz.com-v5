@@ -1,48 +1,14 @@
-// src/components/home/sections/hero/HeroSection.tsx
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { readPublishedConfiguration } from "@/lib/site/configuration.server";
+import { publicHero } from "@/lib/site/public-config";
 import HeroSectionClient from "./HeroSectionClient";
 
-type HeroCrop = { x: number; y: number; zoom: number };
-
-type HomeSection = {
-  key: string;
-  title?: string | null;
-  description?: string | null;
-  thumbnail_url?: string | null;
-  body?: Record<string, any> | null;
-};
-
+/**
+ * Public-safe empty appearance defaults. Published appearance metadata is
+ * supplied through the owner-managed Neon appearance repository when it is
+ * available; no legacy provider is initialized by rendering the homepage.
+ */
 export default async function HeroSection() {
-  const supabase = createSupabaseServerClient();
-
-  const { data, error } = await supabase
-    .from("home_sections")
-    .select("*")
-    .eq("key", "hero")
-    .maybeSingle<HomeSection>();
-
-  if (error) {
-    console.error("[HeroSection] supabase error", error);
-  }
-
-  const body = (data?.body || {}) as Record<string, any>;
-
-  const crop: HeroCrop = {
-    x: Math.max(0, Math.min(100, Number(body?.heroCrop?.x ?? 50))),
-    y: Math.max(0, Math.min(100, Number(body?.heroCrop?.y ?? 50))),
-    zoom: Math.max(1, Math.min(3, Number(body?.heroCrop?.zoom ?? 1))),
-  };
-
-  const hero = {
-    title: data?.title ?? undefined,
-    description:
-      (data?.description as string | undefined) ??
-      (typeof data?.body === "object"
-        ? (data?.body as any)?.description
-        : undefined),
-    thumbnail_url: data?.thumbnail_url ?? undefined,
-    crop,
-  };
-
-  return <HeroSectionClient hero={hero} />;
+  const { homepage } = await readPublishedConfiguration();
+  if (homepage?.enabled === false) return null;
+  return <><HeroSectionClient hero={{ ...publicHero, title: homepage?.title ?? publicHero.title }} />{homepage?.description && <p className="relative z-10 mx-auto max-w-3xl p-6">{homepage.description}</p>}</>;
 }

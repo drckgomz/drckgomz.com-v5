@@ -1,106 +1,18 @@
 // src/app/[slug]/page.tsx
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { fetchProjectAndMedia } from "@/lib/projects/public";
 import InlineCarousel from "@/components/home/sections/project/InlineCarousel";
 
-type ProjectRow = {
-  id: string;
-  slug: string | null;
-  title: string;
-  excerpt: string | null;
-  href: string | null;
-  color: string | null;
-  image_url: string | null;
-  content: string | null; // HTML, already sanitized when saved
-};
-
-type ProjectMediaRow = {
-  id: string;
-  type: string;
-  url: string;
-  caption: string | null;
-  idx: number | null;
-  created_at: string | null;
-  meta: any | null;
-};
-
-// Try slug first, then fall back to ID
-async function fetchProjectAndMedia(slugOrId: string) {
-  const supabase = createSupabaseServerClient();
-
-  let project: ProjectRow | null = null;
-
-  // 1) try by slug
-  const { data: bySlug, error: slugError } = await supabase
-    .from("home_projects") // TODO: change to your real table name if different
-    .select(
-      "id, slug, title, excerpt, href, color, image_url, content"
-    )
-    .eq("slug", slugOrId)
-    .maybeSingle<ProjectRow>();
-
-  if (slugError) {
-    console.error("[ProjectPage] slug lookup error", slugError);
-  }
-
-  if (bySlug) {
-    project = bySlug;
-  } else {
-    // 2) fall back to ID
-    const { data: byId, error: idError } = await supabase
-      .from("home_projects") // TODO: change table name if needed
-      .select(
-        "id, slug, title, excerpt, href, color, image_url, content"
-      )
-      .eq("id", slugOrId)
-      .maybeSingle<ProjectRow>();
-
-    if (idError) {
-      console.error("[ProjectPage] id lookup error", idError);
-    }
-    project = byId ?? null;
-  }
-
-  if (!project) return { project: null, media: [] as ProjectMediaRow[] };
-
-  const { data: mediaRows, error: mediaError } = await supabase
-    .from("home_project_media") // TODO: change to your real media table
-    .select("id, type, url, caption, idx, created_at, meta")
-    .eq("project_id", project.id)
-    .order("idx", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  if (mediaError) {
-    console.error("[ProjectPage] media error", mediaError);
-  }
-
-  let media = (mediaRows ?? []) as ProjectMediaRow[];
-
-  // If you have a hero image but no media rows, use hero as a fallback slide
-  if ((!media || media.length === 0) && project.image_url) {
-    media = [
-      {
-        id: "hero",
-        type: "image",
-        url: project.image_url,
-        caption: project.title,
-        idx: 0,
-        created_at: null,
-        meta: null,
-      },
-    ];
-  }
-
-  return { project, media };
-}
+export const dynamic = "force-dynamic";
 
 export default async function ProjectPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const slugOrId = decodeURIComponent(params.slug);
+  const { slug } = await params;
+  const slugOrId = slug;
   const { project, media } = await fetchProjectAndMedia(slugOrId);
 
   if (!project) {
@@ -110,7 +22,7 @@ export default async function ProjectPage({
   const { title, excerpt, href, content } = project;
 
   return (
-    <main className="min-h-screen w-full bg-black text-white">
+    <main data-theme-scope="projects" className="min-h-screen w-full bg-black text-white">
       <div className="mx-auto max-w-5xl px-4 pb-16 pt-28">
         {/* Back link */}
         <div className="mb-4 text-sm text-white/70">

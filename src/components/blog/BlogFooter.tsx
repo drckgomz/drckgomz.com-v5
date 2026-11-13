@@ -1,39 +1,42 @@
 // frontend/src/features/blog/components/BlogFooter.tsx
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
-const BlogFooter = () => {
+const BlogFooter = ({ offlinePreview = false }: { offlinePreview?: boolean }) => {
   const pathname = usePathname();
-  const [isAdmin, setIsAdmin] = useState(false);
   const [showBugModal, setShowBugModal] = useState(false);
   const [bugReport, setBugReport] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const reportingConfigured = Boolean(process.env.NEXT_PUBLIC_API_BASE_URL);
+  const reportingUnavailable = offlinePreview || !reportingConfigured;
 
   const showSocials = useMemo(
-    () => ['/BlogHome', '/blog/'].some((p) => pathname === p || pathname?.startsWith(p)),
+    () => pathname === '/blog' || pathname?.startsWith('/blog/'),
     [pathname]
   );
 
-  useEffect(() => {
-    try {
-      setIsAdmin(localStorage.getItem('isAdmin') === 'true');
-    } catch {
-      setIsAdmin(false);
-    }
-  }, []);
-
   const handleSubmitBug = async () => {
-    if (!bugReport.trim()) {
-      alert('Please describe the bug.');
-      return;
-    }
+    if (!bugReport.trim() || reportingUnavailable || submitting) return;
 
     try {
       setSubmitting(true);
       const base = process.env.NEXT_PUBLIC_API_BASE_URL;
-      if (!base) throw new Error('API base URL is not configured');
+      if (!base) {
+        setSubmitMessage('Bug reporting is unavailable in this environment.');
+        return;
+      }
 
       const payload = {
         description: bugReport.trim(),
@@ -48,17 +51,12 @@ const BlogFooter = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!resp.ok) {
-        const msg = await resp.text().catch(() => '');
-        throw new Error(msg || 'Failed to submit bug report');
-      }
-
-      alert('🐞 Bug report submitted. Thank you!');
+      if (!resp.ok) throw new Error('submission-failed');
+      setSubmitMessage('Bug report submitted. Thank you.');
       setBugReport('');
-      setShowBugModal(false);
-    } catch (err: any) {
-      console.error('Bug report error:', err?.message || err);
-      alert('❌ Failed to send bug report.');
+    } catch {
+      console.error('Bug report submission failed.');
+      setSubmitMessage('The report could not be submitted. Please try again later.');
     } finally {
       setSubmitting(false);
     }
@@ -66,7 +64,7 @@ const BlogFooter = () => {
 
   return (
     <div className="w-full p-4 bg-transparent text-center z-20 sm:block">
-      {showSocials && (
+      {!offlinePreview && showSocials && (
         <div className="flex justify-center space-x-6 mb-3">
           {/* socials unchanged */}
           <a href="https://www.youtube.com/@drckgomz" target="_blank" rel="noopener noreferrer">
@@ -81,39 +79,46 @@ const BlogFooter = () => {
         </div>
       )}
 
-      <button onClick={() => setShowBugModal(true)} className="text-sm text-gray-400 hover:text-white underline">
+      <button
+        type="button"
+        onClick={() => { setSubmitMessage(null); setShowBugModal(true); }}
+        className="text-sm text-gray-400 underline transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+      >
         Report a Bug
       </button>
 
-      {showBugModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-gray-900 p-6 rounded-lg max-w-md w-full shadow-lg text-white">
-            <h2 className="text-xl font-semibold mb-4">Report a Bug</h2>
+      <Dialog open={showBugModal} onOpenChange={setShowBugModal}>
+        <DialogContent className="border-white/15 bg-zinc-950 text-white">
+          <DialogHeader>
+            <DialogTitle>Report a Bug</DialogTitle>
+            <DialogDescription className="text-white/65">
+              {reportingUnavailable
+                ? 'Bug reporting is unavailable in offline preview or when the reporting service is not configured.'
+                : 'Describe the issue. The report will include this page path and browser details.'}
+            </DialogDescription>
+          </DialogHeader>
+          <label className="grid gap-2 text-sm text-white/80" htmlFor="blog-bug-report">
+            Description
             <textarea
-              className="w-full h-32 p-2 rounded bg-gray-800 border border-gray-700 text-white"
-              placeholder="Describe the issue..."
+              id="blog-bug-report"
+              className="min-h-32 w-full rounded border border-white/15 bg-zinc-900 p-3 text-white placeholder:text-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 disabled:opacity-60"
+              placeholder={reportingUnavailable ? 'Unavailable in this preview' : 'Describe the issue…'}
               value={bugReport}
-              onChange={(e) => setBugReport(e.target.value)}
+              onChange={(event) => setBugReport(event.target.value)}
+              disabled={reportingUnavailable || submitting}
             />
-            <div className="flex justify-center mt-4 space-x-2">
-              <button
-                onClick={() => setShowBugModal(false)}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded"
-                disabled={submitting}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitBug}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-60"
-                disabled={submitting}
-              >
-                {submitting ? 'Submitting…' : 'Submit'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </label>
+          {submitMessage && <p role="status" className="text-sm text-white/75">{submitMessage}</p>}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowBugModal(false)} disabled={submitting}>
+              Close
+            </Button>
+            <Button type="button" onClick={handleSubmitBug} disabled={reportingUnavailable || !bugReport.trim() || submitting}>
+              {submitting ? 'Submitting…' : 'Submit report'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

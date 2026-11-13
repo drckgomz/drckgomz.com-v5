@@ -1,88 +1,49 @@
-// frontend/src/features/blog/components/BlogContent.tsx
-
 "use client";
 
 import * as React from "react";
-import DOMPurify from "dompurify";
+import { sanitizeBlogPreview } from "@/lib/blog/preview";
 import { replacePlaceholders, type MediaItem } from "@/lib/blog/render";
 
-const DBG = (label: string, payload?: any) =>
-  console.debug(`[BlogContent] ${label}`, payload);
+const subscribe = () => () => {};
 
-export default function BlogContent({
-  content,
-  media,
-}: {
-  content: string;
-  media: MediaItem[];
-}) {
-  DBG("props", { contentLen: content?.length, mediaCount: media?.length });
 
-  // 1) build the HTML with embeds swapped in (v3 behavior)
-  const unsafeHtml: string = React.useMemo(() => {
-    const out = replacePlaceholders(content || "", media || []);
-    DBG("unsafeHtmlPreview", out.slice(0, 500));
-    return out;
-  }, [content, media]);
+export default function BlogContent({ content, media }: { content: string; media: MediaItem[] }) {
+  const hydrated = React.useSyncExternalStore(subscribe, () => true, () => false);
+  const sanitizedHtml = React.useMemo(() => hydrated
+    ? sanitizeBlogPreview(replacePlaceholders(content || "", media || [])) : "", [content, media, hydrated]);
+  const [embedsAllowed, setEmbedsAllowed] = React.useState(false);
+  const [embedError, setEmbedError] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const hasInstagram = sanitizedHtml.includes('class="instagram-media"');
 
-  // 2) sanitize it
-  const sanitizedHtml: string = React.useMemo(() => {
-    const s = DOMPurify.sanitize(unsafeHtml, {
-      ADD_TAGS: ["iframe", "blockquote", "span"],
-      ADD_ATTR: [
-        "allow",
-        "allowfullscreen",
-        "frameborder",
-        "referrerpolicy",
-        "data-instgrm-permalink",
-        "data-instgrm-version",
-        "title",
-        "loading",
-        "src",
-        "class",
-        "style",
-        "target",
-        "rel",
-        "alt",
-      ],
-      FORBID_TAGS: ["script"],
-      ALLOWED_URI_REGEXP: /^(?:(?:(?:https?:)?\/\/)|data:image\/|mailto:)/i,
-    });
-
-    DBG("sanitizedHtmlPreview", s.slice(0, 500));
-    return s;
-  }, [unsafeHtml]);
-
-  // 3) ping Instagram after the sanitized HTML is on the page (prevents race)
   React.useEffect(() => {
-    const hasScript = !!document.querySelector(
-      'script[src="https://www.instagram.com/embed.js"]'
-    );
-    if (!hasScript) {
-      const s = document.createElement("script");
-      s.src = "https://www.instagram.com/embed.js";
-      s.async = true;
-      document.body.appendChild(s);
-      DBG("instagram script injected");
-    } else {
-      DBG("instagram script present");
+    if (!embedsAllowed || !hasInstagram) return;
+    let active = true;
+    const process = () => {
+      if (active) (window as Window & { instgrm?: { Embeds?: { process: () => void } } }).instgrm?.Embeds?.process();
+    };
+    let script = document.querySelector<HTMLScriptElement>('script[src="https://www.instagram.com/embed.js"]');
+    if (!script) {
+      script = document.createElement("script");
+      script.src = "https://www.instagram.com/embed.js";
+      script.async = true;
+      document.body.appendChild(script);
     }
-    const t = setTimeout(() => {
-      const ok = (window as any).instgrm?.Embeds?.process?.();
-      DBG("instgrm.process invoked", { ok: !!ok });
-    }, 400);
-    return () => clearTimeout(t);
-  }, [sanitizedHtml]);
+    const onError = () => { if (active) setEmbedError(true); };
+    script.addEventListener("load", process);
+    script.addEventListener("error", onError);
+    process();
+    return () => { active = false; script.removeEventListener("load", process); script.removeEventListener("error", onError); };
+  }, [embedsAllowed, hasInstagram, sanitizedHtml]);
 
   return (
-    <div
-      className={[
-        "prose prose-invert max-w-none",
-        "prose-p:my-3 prose-br:leading-6",
-        "prose-img:rounded-lg",
-        "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
-      ].join(" ")}
-      dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-    />
+    <div className="blog-content-shell">
+      {hasInstagram && !embedsAllowed && <div className="blog-embed-notice">
+        <p>Instagram embeds contact a third party. Links work without loading them.</p>
+        <button type="button" onClick={() => setEmbedsAllowed(true)}>Load Instagram embeds</button>
+      </div>}
+      {embedError && <p role="status">Instagram could not load. Use the post link instead.</p>}
+      <div ref={ref} className="blog-content" dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
+    </div>
   );
 }

@@ -1,6 +1,8 @@
 // src/components/home/sections/project/InlineCarousel.tsx
 "use client";
 
+import { getYouTubeId } from "@/lib/blog/render";
+import type { ProjectMedia } from "./useProjectDetail";
 import * as React from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -57,7 +59,7 @@ export default function InlineCarousel({
   media,
   accent = "#22d3ee",
 }: {
-  media: any[];
+  media: ProjectMedia[];
   accent?: string;
 }) {
   const [i, setI] = React.useState(0);
@@ -65,7 +67,9 @@ export default function InlineCarousel({
 
   if (!media?.length) return null;
 
-  const cur = media[i];
+  const activeIndex = i % media.length;
+  const cur = media[activeIndex];
+  const youtubeId = cur.type === "youtube" ? getYouTubeId(cur.url) : null;
   const multi = media.length > 1;
 
   const accentGlow = hexToRgba(accent, 0.35);
@@ -178,14 +182,13 @@ export default function InlineCarousel({
                 </div>
               </div>
             </button>
-          ) : cur.type === "youtube" ? (
+          ) : cur.type === "youtube" && youtubeId ? (
             <iframe
               className="h-full w-full"
-              src={
-                cur.url.includes("embed")
-                  ? cur.url
-                  : cur.url.replace("watch?v=", "embed/")
-              }
+              src={`https://www.youtube.com/embed/${youtubeId}`}
+              sandbox="allow-scripts allow-same-origin allow-presentation"
+              referrerPolicy="no-referrer"
+              loading="lazy"
               title={cur.caption || "YouTube"}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -220,7 +223,7 @@ export default function InlineCarousel({
             </button>
 
             <div className="text-xs text-white/80">
-              {i + 1} / {media.length}
+              {activeIndex + 1} / {media.length}
               {cur.caption ? (
                 <>
                   {" "}

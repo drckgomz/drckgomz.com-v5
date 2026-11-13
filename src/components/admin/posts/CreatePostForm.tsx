@@ -20,27 +20,29 @@ function slugify(input: string) {
 export default function CreatePostForm() {
   const router = useRouter();
 
-  const [title, setTitle] = React.useState("");
-  const [slug, setSlug] = React.useState("");
-  const [excerpt, setExcerpt] = React.useState("");
+  const titleInput = React.useRef<HTMLInputElement>(null);
+  const slugInput = React.useRef<HTMLInputElement>(null);
+  const excerptInput = React.useRef<HTMLTextAreaElement>(null);
+  const hydrated = React.useSyncExternalStore(() => () => undefined, () => true, () => false);
   const [creating, setCreating] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
 
-  // Auto-suggest slug while user hasn’t manually edited it
+  // Keep the slug suggestion directly in the DOM so the form doesn't depend
+  // on a debounced state/render cycle during submit.
   const slugTouchedRef = React.useRef(false);
-  React.useEffect(() => {
-    if (!slugTouchedRef.current) setSlug(slugify(title));
-  }, [title]);
 
+  const creatingRef = React.useRef(false);
   async function onCreate() {
+    if (creatingRef.current) return;
+    creatingRef.current = true;
     setErr(null);
     setCreating(true);
 
     try {
       const payload = {
-        title: title.trim(),
-        slug: slug.trim(),
-        excerpt: excerpt.trim() || null,
+        title: titleInput.current?.value.trim() ?? "",
+        slug: slugInput.current?.value.trim() ?? "",
+        excerpt: excerptInput.current?.value.trim() || null,
       };
 
       if (!payload.title) throw new Error("Title is required.");
@@ -58,79 +60,78 @@ export default function CreatePostForm() {
       const nextSlug = json?.post?.slug || payload.slug;
 
       router.push(`/admin/posts/${encodeURIComponent(nextSlug)}`);
-      router.refresh();
-    } catch (e: any) {
-      setErr(e?.message || "Failed to create post.");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Failed to create post.");
     } finally {
+      creatingRef.current = false;
       setCreating(false);
     }
   }
 
   return (
-    <div className="space-y-5">
+    <div data-testid="create-post-form" data-hydrated={hydrated ? "true" : "false"} className="post-publishing min-w-0 space-y-5">
       {err ? (
-        <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-destructive">
+        <div role="alert" className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-destructive">
           {err}
         </div>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <label className="text-xs font-medium text-white/80">Title</label>
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+          <label htmlFor="new-title" className="text-xs font-medium text-foreground/80">Title</label>
+          <Input id="new-title" maxLength={240}
+            ref={titleInput}
+            defaultValue=""
+            onInput={(e) => { if (!slugTouchedRef.current && slugInput.current) slugInput.current.value = slugify(e.currentTarget.value); }}
             placeholder="My new post…"
-            className="border-white/10 bg-white/5 text-white placeholder:text-white/40"
+            className="border-border bg-muted/40 text-foreground placeholder:text-muted-foreground"
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-medium text-white/80">Slug</label>
-          <Input
-            value={slug}
-            onChange={(e) => {
+          <label htmlFor="new-slug" className="text-xs font-medium text-foreground/80">Slug</label>
+          <Input id="new-slug" maxLength={240}
+            ref={slugInput}
+            defaultValue=""
+            onInput={() => {
               slugTouchedRef.current = true;
-              setSlug(e.target.value);
             }}
-            onBlur={() => setSlug((s) => slugify(s))}
+            onBlur={(e) => { e.currentTarget.value = slugify(e.currentTarget.value); }}
             placeholder="my-new-post"
-            className="border-white/10 bg-white/5 text-white placeholder:text-white/40"
+            className="border-border bg-muted/40 text-foreground placeholder:text-muted-foreground"
           />
-          <p className="text-[11px] text-white/50">
-            URL: <span className="font-mono text-white/70">/blog/{slug || "your-slug"}</span>
-          </p>
+          <p className="text-[11px] text-muted-foreground">Use lowercase letters, numbers, and hyphens.</p>
         </div>
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs font-medium text-white/80">Excerpt</label>
-        <Textarea
-          value={excerpt}
-          onChange={(e) => setExcerpt(e.target.value)}
+        <label htmlFor="new-excerpt" className="text-xs font-medium text-foreground/80">Excerpt</label>
+        <Textarea id="new-excerpt" maxLength={2000}
+          ref={excerptInput}
+          defaultValue=""
           rows={4}
           placeholder="Short summary that appears on the blog list…"
-          className="border-white/10 bg-white/5 text-white placeholder:text-white/40"
+          className="border-border bg-muted/40 text-foreground placeholder:text-muted-foreground"
         />
-        <p className="text-[11px] text-white/50">Tip: 1–2 sentences reads best on the feed.</p>
+        <p className="text-[11px] text-muted-foreground">Tip: 1–2 sentences reads best on the feed.</p>
       </div>
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
         <Button
           type="button"
           variant="ghost"
-          className="bg-white/25 hover:bg-white hover:text-black"
+          className="bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground"
           onClick={() => router.back()}
-          disabled={creating}
+          disabled={!hydrated || creating}
         >
           Cancel
         </Button>
 
         <Button
           type="button"
-          className="bg-white/25 hover:bg-white hover:text-black"
+          className="bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground"
           onClick={onCreate}
-          disabled={creating}
+          disabled={!hydrated || creating}
         >
           {creating ? "Creating…" : "Create & edit"}
         </Button>

@@ -6,7 +6,7 @@ export type ProjectMedia = {
   url: string;
   caption?: string | null;
   idx?: number | null;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 };
 
 export type Project = {

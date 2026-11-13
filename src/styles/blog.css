@@ -1,0 +1,47 @@
+/* Actual content boundaries, never a page-wide overflow mask. */
+.blog-content-shell, .blog-content { min-width: 0; max-width: 100%; }
+.blog-content { color: var(--foreground); font-family: var(--font-body); font-size: var(--text-reading); line-height: var(--leading-reading); overflow-wrap: anywhere; }
+.blog-content > * + * { margin-block-start: var(--space-content); }
+.blog-content :where(h1,h2,h3,h4) { line-height: 1.25; font-weight: 650; margin-block: 1.75rem .75rem; }
+.blog-content h1 { font-size: clamp(1.75rem, 4vw, 2.75rem); }
+.blog-content h2 { font-size: 1.6rem; }
+.blog-content h3 { font-size: 1.25rem; }
+.blog-content :where(ul,ol) { padding-inline-start: 1.5rem; }
+.blog-content ul { list-style: disc; } .blog-content ol { list-style: decimal; }
+.blog-content :where(img,video,audio,iframe) { display: block; max-width: 100%; }
+.blog-content :where(img,video) { height: auto; object-fit: contain; }
+.blog-content iframe { width: 100%; min-width: 0; aspect-ratio: 16/9; height: auto; border: 0; }
+.blog-content .instagram-media { min-width: 0 !important; max-width: 100% !important; width: 100% !important; }
+.blog-content .instagram-media iframe { aspect-ratio: auto; }
+.blog-content figure { margin-inline: 0; }
+.blog-content :where(figcaption,blockquote) { color: var(--muted-foreground); }
+.blog-content blockquote { border-inline-start: 3px solid var(--border); padding-inline-start: 1rem; }
+.blog-content a { color: var(--primary); text-decoration: underline; text-underline-offset: .2em; }
+.blog-content pre { max-width: 100%; overflow-x: auto; white-space: pre; padding: 1rem; background: var(--muted); border-radius: var(--radius); }
+.blog-content pre code { overflow-wrap: normal; word-break: normal; }
+.blog-content :not(pre) > code { overflow-wrap: anywhere; background: var(--muted); padding: .1em .25em; }
+.blog-content table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
+.blog-content :where(td,th) { padding: .5rem; border: 1px solid var(--border); }
+.blog-content summary { cursor: pointer; font-weight: 600; }
+.blog-content :where(a,summary):focus-visible, .blog-embed-notice button:focus-visible { outline: var(--focus-width) solid var(--ring); outline-offset: var(--focus-offset); }
+.blog-embed-notice { padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); margin-block: 1rem; color: var(--foreground); }
+.blog-embed-notice button { margin-top: .5rem; text-decoration: underline; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .blog-content-shell *, .blog-content-shell *::before, .blog-content-shell *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
+.blog-content .text-gray-400 { color: var(--muted-foreground); }
+
+/* Long legacy content must not determine the editor grid's minimum width. */
+.post-editor { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.post-editor :where(img,video,iframe) { max-width: 100%; height: auto; }
+.post-editor :where(pre,table) { display: block; max-width: 100%; overflow-x: auto; }
+.post-editor pre { white-space: pre; }
+.post-editor pre code { overflow-wrap: normal; }
+
+.post-publishing select option { background: var(--background); color: var(--foreground); }
+.blog-content :where(td,th), .post-editor :where(td,th) { min-width: 8rem; overflow-wrap: normal; }
+/* Gallery uses the same renderer, semantic colors and motion policy as prose. */
+.blog-gallery .carousel-status { color: var(--foreground); background: var(--background); text-shadow: none; }
+.blog-gallery .control-arrow { background: #000 !important; opacity: 1 !important; }
+.blog-gallery .slide { background: transparent; min-width: 0; }
+@media (prefers-reduced-motion: reduce) { .blog-gallery * { transition: none !important; animation: none !important; } }
+
+.post-editor .media-placeholder { color: var(--primary); background: var(--muted); border-radius: var(--radius); }

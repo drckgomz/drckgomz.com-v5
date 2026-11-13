@@ -1,3 +1,4 @@
+import { validateProjectMedia } from "@/lib/cms/projectMediaInput";
 // src/app/api/admin/projects/[id]/media/route.ts
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin/requireAdminApi";
@@ -9,7 +10,7 @@ type InsertRow = {
   url: string;
   caption: string | null;
   idx: number | null;
-  meta: any;
+  meta: Record<string, unknown> | null;
 };
 
 export async function GET(
@@ -29,7 +30,7 @@ export async function GET(
     .order("idx", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
 
-  if (error) return new NextResponse(error.message, { status: 500 });
+  if (error) return NextResponse.json({ error: "Project media operation failed." }, { status: 500 });
   return NextResponse.json({ media: data ?? [] });
 }
 
@@ -41,38 +42,32 @@ export async function POST(
   if (guard) return guard;
 
   const { id: projectId } = await props.params;
-  const body = await req.json().catch(() => ({}));
-
-  const items = Array.isArray(body?.items) ? body.items : [];
-  const mode: "append" | "replace" = body?.mode === "replace" ? "replace" : "append";
-
+  const body: unknown = await req.json().catch(() => null);
+  if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Expected a media object." }, { status: 400 });
+  const input = body as Record<string, unknown>;
+  if (!Array.isArray(input.items) || input.items.length > 100 || (input.mode !== undefined && !["append", "replace"].includes(String(input.mode)))) {
+    return NextResponse.json({ error: "Expected up to 100 media items and append/replace mode." }, { status: 400 });
+  }
+  const toInsert: InsertRow[] = [];
+  for (const item of input.items) {
+    const parsed = validateProjectMedia(item);
+    if (parsed.error || !parsed.fields.url) return NextResponse.json({ error: parsed.error ?? "Missing media URL." }, { status: 400 });
+    toInsert.push({ project_id: projectId, type: parsed.fields.type ?? "image", url: parsed.fields.url,
+      caption: parsed.fields.caption ?? null, idx: parsed.fields.idx ?? null, meta: parsed.fields.meta ?? null });
+  }
   const db = supabaseAdmin();
-
-  if (mode === "replace") {
-    await db.from("home_project_media").delete().eq("project_id", projectId);
+  // Validate the complete replacement before any deletion. This is still not a transaction.
+  if (input.mode === "replace") {
+    const { error } = await db.from("home_project_media").delete().eq("project_id", projectId);
+    if (error) return NextResponse.json({ error: "Media replacement failed; insertion was not attempted." }, { status: 500 });
   }
-
-  const toInsert: InsertRow[] = items
-    .map((it: any): InsertRow => ({
-      project_id: projectId,
-      type: typeof it.type === "string" ? it.type : "image",
-      url: String(it.url || ""),
-      caption: typeof it.caption === "string" ? it.caption : null,
-      idx: Number.isFinite(it.idx) ? Number(it.idx) : null,
-      meta: it.meta ?? null,
-    }))
-    .filter((row: InsertRow) => row.url.length > 0);
-
-
-  if (toInsert.length === 0) {
-    return NextResponse.json({ media: [] });
-  }
+  if (!toInsert.length) return NextResponse.json({ media: [] });
 
   const { data, error } = await db
     .from("home_project_media")
     .insert(toInsert)
     .select("id, project_id, type, url, caption, idx, meta, created_at");
 
-  if (error) return new NextResponse(error.message, { status: 500 });
+  if (error) return NextResponse.json({ error: "Project media operation failed." }, { status: 500 });
   return NextResponse.json({ media: data ?? [] });
 }
