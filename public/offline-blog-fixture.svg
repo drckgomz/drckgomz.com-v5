@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title">
+  <title id="title">Local sample image fixture — original post image unavailable offline</title>
+  <defs><linearGradient id="background" x2="1" y2="1"><stop stop-color="#343434"/><stop offset="1" stop-color="#080808"/></linearGradient></defs>
+  <path fill="url(#background)" d="M0 0h1200v675H0z"/>
+  <path fill="none" stroke="#777" stroke-opacity=".32" stroke-width="2" d="M48 48h1104v579H48z"/>
+  <text x="600" y="326" fill="#aaa" font-family="Arial,sans-serif" font-size="24" letter-spacing="6" text-anchor="middle">LOCAL SAMPLE IMAGE FIXTURE</text>
+  <text x="600" y="370" fill="#777" font-family="Arial,sans-serif" font-size="15" letter-spacing="2" text-anchor="middle">ORIGINAL POST MEDIA UNAVAILABLE OFFLINE</text>
+</svg>

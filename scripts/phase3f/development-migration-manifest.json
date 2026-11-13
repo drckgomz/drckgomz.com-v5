@@ -1,0 +1,18 @@
+{
+  "manifestVersion": 1,
+  "target": {
+    "project": "jolly-poetry-87664309",
+    "branch": "br-nameless-dust-bewpmr4r",
+    "endpoint": "ep-sparkling-sun-bedq0ozn",
+    "hostname": "ep-sparkling-sun-bedq0ozn.c-9.us-east-2.aws.neon.tech",
+    "database": "neondb",
+    "postgresMajor": "18"
+  },
+  "journalSha256": "7edbb993cebb208e44efd4bd163ba74b8842f7d528c5871ea215aaf64875bda8",
+  "migrations": [
+    { "tag": "0000_petite_loki", "sha256": "201022ebf1346f754df936a2139075c63abde28eea6be065d24214f6a8e331bc", "snapshotSha256": "32e826696e22c2ac418c20cd309c97e99d925f01b505b834a413bc71bd977ed0" },
+    { "tag": "0001_bitter_tiger_shark", "sha256": "0ae7871fc214b53788fbfb0ef6081eb2cd89fc20ff5e2d7ef93f7a6f1dc15bbc", "snapshotSha256": "ccfd1b3bf1a3718c9d7d27c2b781b4bfd42cf6e903ce6abfcc0b2763cde017a0" },
+    { "tag": "0002_many_kingpin", "sha256": "582506469c83811bd9c00f313a9d23f64441234953b53efdf248549fb128f0be", "snapshotSha256": "0472d6489b5b9906e246aca41db28f01f5bd368d6a9a1825ae790098aaa0924a" },
+    { "tag": "0003_early_blizzard", "sha256": "0aaf2b0225b819ce1dc262f504dcf1a6b72ec9761bf13a01ab8ccd6cb09fb93e", "snapshotSha256": "fffdcebd56bfbe16e0c18b10edb8ce0e2564eb906b4a138bc285b71bc1b5bbad" }
+  ]
+}

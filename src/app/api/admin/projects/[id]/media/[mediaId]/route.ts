@@ -1,3 +1,4 @@
+import { validateProjectMedia } from "@/lib/cms/projectMediaInput";
 // src/app/api/admin/projects/[id]/media/[mediaId]/route.ts
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin/requireAdminApi";
@@ -11,23 +12,20 @@ export async function PATCH(
   if (guard) return guard;
 
   const { id: projectId, mediaId } = await props.params;
-  const body = await req.json().catch(() => ({}));
-
-  const patch: Record<string, any> = {};
-  if (typeof body.caption === "string" || body.caption === null) patch.caption = body.caption;
-  if (typeof body.idx === "number" || body.idx === null) patch.idx = body.idx;
-  if (typeof body.type === "string") patch.type = body.type;
-  if (typeof body.url === "string") patch.url = body.url;
-  if (typeof body.meta === "object") patch.meta = body.meta;
-
+  const body: unknown = await req.json().catch(() => null);
   const db = supabaseAdmin();
-  const { error } = await db
-    .from("home_project_media")
-    .update(patch)
-    .eq("id", mediaId)
-    .eq("project_id", projectId);
+  const { data: existing, error: lookupError } = await db.from("home_project_media")
+    .select("id,type,url").eq("id", mediaId).eq("project_id", projectId).maybeSingle();
+  if (lookupError) return NextResponse.json({ error: "Media lookup failed." }, { status: 500 });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const parsed = validateProjectMedia(body, existing);
+  if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
+  let update = db.from("home_project_media").update(parsed.fields).eq("id", mediaId).eq("project_id", projectId);
+  if ("type" in parsed.fields || "url" in parsed.fields) update = update.eq("type", existing.type).eq("url", existing.url);
+  const { data: saved, error } = await update.select("id").maybeSingle();
 
-  if (error) return new NextResponse(error.message, { status: 500 });
+  if (error) return NextResponse.json({ error: "Project media operation failed." }, { status: 500 });
+  if (!saved) return NextResponse.json({ error: "Media changed. Reload before retrying." }, { status: 409 });
   return NextResponse.json({ ok: true });
 }
 
@@ -47,6 +45,6 @@ export async function DELETE(
     .eq("id", mediaId)
     .eq("project_id", projectId);
 
-  if (error) return new NextResponse(error.message, { status: 500 });
+  if (error) return NextResponse.json({ error: "Project media operation failed." }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

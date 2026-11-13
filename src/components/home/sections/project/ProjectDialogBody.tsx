@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import InlineCarousel from "@/components/home/sections/project/InlineCarousel";
-import type { Project } from "@/components/home/sections/project/useProjectDetail";
+import type { Project, ProjectMedia } from "@/components/home/sections/project/useProjectDetail";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,7 @@ export default function ProjectDialogBody({
   project,
 }: {
   loading: boolean;
-  media: any[];
+  media: ProjectMedia[];
   project: Project | null | undefined;
 }) {
   const html = React.useMemo(() => {

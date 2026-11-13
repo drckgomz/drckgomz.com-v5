@@ -1,0 +1,1 @@
+ALTER TABLE "auth"."session" ALTER COLUMN "token_sha256" SET DEFAULT '';

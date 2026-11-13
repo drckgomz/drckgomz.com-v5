@@ -17,23 +17,26 @@ type PostWithMedia = Post & { media?: MediaItem[] | null };
 
 function topMediaThumb(media?: MediaItem[] | null, fallback?: string | null) {
   const img = (media ?? []).find((m) => m.type === "image" && m.url);
-  return img?.url || fallback || "/default-thumbnail.png";
+  return img?.url || fallback || null;
 }
 
 type Props = {
+  busy?: boolean;
   post: PostWithMedia;
-  thumbUrl?: string;
+  thumbUrl?: string | null;
   onMakePublic: (slug: string) => void;
   onMakePrivate: (slug: string) => void;
   onMakeDraft: (slug: string) => void;
   onArchive: (slug: string) => void;
   onUnarchive: (slug: string) => void;
   onDelete: (slug: string) => void;
+  onDuplicate?: (slug: string) => void;
   /** v5 route for edit page */
   editHref?: (slug: string) => string;
 };
 
 export default function PostRow({
+  busy = false,
   post: p,
   thumbUrl,
   onMakePublic,
@@ -42,7 +45,8 @@ export default function PostRow({
   onArchive,
   onUnarchive,
   onDelete,
-  editHref = (slug) => `/admin/posts/${slug}`,
+  onDuplicate,
+  editHref = (slug) => `/admin/posts/${encodeURIComponent(slug)}`,
 }: Props) {
   const router = useRouter();
 
@@ -52,21 +56,22 @@ export default function PostRow({
   );
 
   return (
-    <li className="flex items-center justify-between gap-4 px-4 py-3">
+    <li className="flex flex-col items-stretch sm:flex-row sm:items-center justify-between gap-4 px-4 py-3">
       <div className="min-w-0 flex items-center gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={thumb}
-          alt={`${p.title || p.slug} thumbnail`}
-          className="h-14 w-14 rounded-lg object-cover bg-muted"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = "/default-thumbnail.png";
-          }}
-        />
+        {thumb ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={thumb}
+            alt={`${p.title || p.slug} thumbnail`}
+            className="h-14 w-14 rounded-lg object-cover bg-muted"
+          />
+        ) : (
+          <div aria-label="No media preview" className="h-14 w-14 shrink-0 rounded-lg border border-border bg-muted/60" />
+        )}
 
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-semibold text-white">
+            <span className="truncate text-sm font-semibold text-foreground">
               {p.title || p.slug}
             </span>
             <StatusBadge status={p.status} />
@@ -91,11 +96,12 @@ export default function PostRow({
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs">
+        {onDuplicate && <Button type="button" disabled={busy} variant="outline" onClick={() => onDuplicate(p.slug)}>Duplicate text</Button>}
         <Button
-          type="button"
+          type="button" disabled={busy}
           size="sm"
           variant="ghost"
-          className="h-7 px-2 text-white border-2 border-white text-[11px] hover:bg-white hover:text-black"
+          className="min-h-11 px-3 text-xs border border-border text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
           onClick={() => router.push(editHref(p.slug))}
         >
           Edit
@@ -103,10 +109,10 @@ export default function PostRow({
 
         {p.status !== "public" && (
           <Button
-            type="button"
+            type="button" disabled={busy}
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[11px] bg-white/5 border-2 border-emerald-600 text-emerald-300 hover:bg-emerald-600 hover:text-white"
+            className="min-h-11 px-3 text-xs border border-border text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
             onClick={() => onMakePublic(p.slug)}
           >
             Make public
@@ -115,10 +121,10 @@ export default function PostRow({
 
         {p.status !== "private" && (
           <Button
-            type="button"
+            type="button" disabled={busy}
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[11px] bg-white/5 border-2 border-blue-500 text-blue-300 hover:bg-blue-600 hover:text-white"
+            className="min-h-11 px-3 text-xs border border-border text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
             onClick={() => onMakePrivate(p.slug)}
           >
             Make private
@@ -127,10 +133,10 @@ export default function PostRow({
 
         {p.status !== "draft" && (
           <Button
-            type="button"
+            type="button" disabled={busy}
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[11px] bg-white/5 text-purple-300 border-2 border-purple-500 hover:bg-purple-500 hover:text-white"
+            className="min-h-11 px-3 text-xs border border-border text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
             onClick={() => onMakeDraft(p.slug)}
           >
             Move to draft
@@ -139,20 +145,20 @@ export default function PostRow({
 
         {p.status !== "archived" ? (
           <Button
-            type="button"
+            type="button" disabled={busy}
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[11px] bg-white/5 border-2 border-amber-600 text-amber-300 hover:bg-amber-500 hover:text-white"
+            className="min-h-11 px-3 text-xs border border-border text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
             onClick={() => onArchive(p.slug)}
           >
             Archive
           </Button>
         ) : (
           <Button
-            type="button"
+            type="button" disabled={busy}
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[11px] bg-white/5 border-2 border-amber-600 text-amber-300 hover:bg-amber-600 hover:text-white"
+            className="min-h-11 px-3 text-xs border border-border text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
             onClick={() => onUnarchive(p.slug)}
           >
             Unarchive
@@ -161,10 +167,10 @@ export default function PostRow({
 
 
         <Button
-          type="button"
+          type="button" disabled={busy}
           size="sm"
           variant="destructive"
-          className="h-7 px-2 text-[11px] bg-destructive/90 hover:bg-white hover:text-red-600"
+          className="min-h-11 px-3 text-xs border border-border text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
           onClick={() => onDelete(p.slug)}
         >
           Delete

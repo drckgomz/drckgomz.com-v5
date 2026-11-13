@@ -3,7 +3,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useAuth } from "@clerk/nextjs";
+import { useOptionalAuthSession } from "@/components/auth/AuthSessionContext";
+import type { OfflineBlogPost } from "@/lib/blog/offline-samples";
 
 import MediaCarousel from "@/components/blog/MediaCarousel";
 import BlogContent from "@/components/blog/BlogContent";
@@ -56,7 +57,17 @@ function statusLabel(status?: string | null) {
   return "";
 }
 
-function coerceMediaType(t: any): Media["type"] {
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function coerceMediaType(t: unknown): Media["type"] {
   const s = String(t || "image").toLowerCase();
   if (s === "youtube") return "youtube";
   if (s === "instagram") return "instagram";
@@ -66,42 +77,46 @@ function coerceMediaType(t: any): Media["type"] {
 // Normalize backend post objects into the Post type used by BlogContent
 // IMPORTANT: Do NOT "resolveUrl" here anymore.
 // Your API already normalizes thumbnail_url + media.url, and MediaCarousel also normalizes defensively.
-function normalizePost(raw: any): Post {
-  const created_at = raw.created_at || raw.date || null;
+function normalizePost(value: unknown): Post {
+  const raw = asRecord(value);
+  const created_at = typeof raw.created_at === "string" ? raw.created_at : typeof raw.date === "string" ? raw.date : null;
 
   let media: RenderMediaItem[] = [];
 
   if (Array.isArray(raw.media) && raw.media.length > 0) {
-    media = raw.media.map((m: any, idx: number) => ({
-      id: String(m.id ?? `${raw.id ?? raw.slug ?? "post"}:${idx}`),
-      type: coerceMediaType(m.type),
-      url: String(m.url || ""),
-      caption: m.caption ?? null,
-      title: m.title ?? null,
-    }));
+    media = raw.media.map((item, idx: number) => {
+      const m = asRecord(item);
+      return {
+        id: String(m.id ?? `${raw.id ?? raw.slug ?? "post"}:${idx}`),
+        type: coerceMediaType(m.type),
+        url: String(m.url || ""),
+        caption: typeof m.caption === "string" ? m.caption : null,
+        title: typeof m.title === "string" ? m.title : null,
+      };
+    });
   } else if (raw.thumbnail_url) {
     media = [
       {
         id: String(raw.id ?? raw.slug ?? "thumb"),
         type: "image",
         url: String(raw.thumbnail_url || ""),
-        caption: raw.title ?? "",
-        title: raw.title ?? null,
+        caption: typeof raw.title === "string" ? raw.title : "",
+        title: stringOrNull(raw.title),
       },
     ];
   }
 
   return {
-    id: String(raw.id),
-    slug: raw.slug ?? null,
-    title: raw.title ?? "(Untitled)",
-    content: raw.content ?? null,
-    excerpt: raw.excerpt ?? null,
-    status: raw.status ?? null,
-    date: raw.date ?? null,
+    id: String(raw.id ?? ""),
+    slug: stringOrNull(raw.slug),
+    title: typeof raw.title === "string" ? raw.title : "(Untitled)",
+    content: stringOrNull(raw.content),
+    excerpt: stringOrNull(raw.excerpt),
+    status: stringOrNull(raw.status),
+    date: stringOrNull(raw.date),
     created_at,
-    updated_at: raw.updated_at ?? null,
-    thumbnail_url: raw.thumbnail_url ?? null,
+    updated_at: stringOrNull(raw.updated_at),
+    thumbnail_url: stringOrNull(raw.thumbnail_url),
     media,
   };
 }
@@ -119,27 +134,34 @@ function toCarouselMedia(items: RenderMediaItem[]): Media[] {
     }));
 }
 
-export default function BlogView({ slug }: { slug: string }) {
-  const { getToken } = useAuth();
+export default function BlogView({ slug, offlinePost, initialPost }: { slug: string; offlinePost?: OfflineBlogPost; initialPost?: unknown }) {
+  const authSession = useOptionalAuthSession();
 
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(!offlinePost && !initialPost);
   const [error, setError] = React.useState<string | null>(null);
-  const [post, setPost] = React.useState<Post | null>(null);
+  const [post, setPost] = React.useState<Post | null>(offlinePost ? normalizePost(offlinePost) : initialPost ? normalizePost(initialPost) : null);
 
   React.useEffect(() => {
     let mounted = true;
 
     async function load() {
+      if (offlinePost) {
+        setPost(normalizePost(offlinePost));
+        setLoading(false);
+        return;
+      }
+      if (initialPost) {
+        setPost(normalizePost(initialPost));
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError(null);
 
       try {
-        const token = await getToken().catch(() => null);
+        const token = await authSession?.getToken().catch(() => null);
 
-        const qs = new URLSearchParams();
-        qs.set("status", "all");
-
-        const res = await fetch(`/api/public/blogs?${qs.toString()}`, {
+        const res = await fetch(`/api/public/blogs/${encodeURIComponent(slug)}`, {
           cache: "no-store",
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
@@ -151,16 +173,7 @@ export default function BlogView({ slug }: { slug: string }) {
 
         const data = await res.json();
 
-        const rawList: any[] = Array.isArray(data)
-          ? data
-          : data.items ?? data.posts ?? data.blogs ?? [];
-
-        const list = rawList.map(normalizePost);
-
-        const target =
-          list.find((p) => String(p.slug || "").toLowerCase() === slug.toLowerCase()) ||
-          list.find((p) => String(p.id) === String(slug)) ||
-          null;
+        const target = data.post ? normalizePost(data.post) : null;
 
         if (!mounted) return;
 
@@ -170,9 +183,9 @@ export default function BlogView({ slug }: { slug: string }) {
         } else {
           setPost(target);
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error("[BlogView] load error:", e);
-        if (mounted) setError(e?.message || "Failed to load post");
+        if (mounted) setError(e instanceof Error ? e.message : "Failed to load post");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -182,7 +195,7 @@ export default function BlogView({ slug }: { slug: string }) {
     return () => {
       mounted = false;
     };
-  }, [slug, getToken]);
+  }, [slug, offlinePost, initialPost, authSession]);
 
   const renderMedia: RenderMediaItem[] = Array.isArray(post?.media) ? post!.media! : [];
   const carouselMedia: Media[] = toCarouselMedia(renderMedia);

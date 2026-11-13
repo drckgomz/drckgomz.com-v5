@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useAuth } from "@clerk/nextjs";
+import type { OfflineBlogPost } from "@/lib/blog/offline-samples";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,26 @@ type Post = {
   media?: MediaItem[];
   status?: string;
   thumbnail_url?: string | null;
+  locked?: boolean;
 };
+
+type PublicPostsPayload = { items?: unknown[]; lockedPosts?: boolean };
+let publicPostsRequest: Promise<PublicPostsPayload> | null = null;
+
+function fetchPublicPosts(): Promise<PublicPostsPayload> {
+  if (!publicPostsRequest) {
+    publicPostsRequest = (async () => {
+      const response = await fetch("/api/public/blogs?status=public", { cache: "no-store" });
+      const payload: unknown = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = asRecord(payload).error;
+        throw new Error(typeof message === "string" ? message : `Public posts are unavailable (${response.status}).`);
+      }
+      return asRecord(payload) as PublicPostsPayload;
+    })().finally(() => { publicPostsRequest = null; });
+  }
+  return publicPostsRequest;
+}
 
 function resolveUrl(url: string | null | undefined): string {
   const u = (url ?? "").trim();
@@ -27,6 +46,7 @@ function resolveUrl(url: string | null | undefined): string {
 
   if (u.startsWith("http://") || u.startsWith("https://") || u.startsWith("data:")) return u;
 
+  if (u.startsWith("/") && !u.startsWith("//")) return u;
   if (u.startsWith("/uploads/")) return u;
   if (u.startsWith("uploads/")) return `/${u}`;
 
@@ -48,28 +68,36 @@ function youtubeThumb(url: string) {
   return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : "";
 }
 
-function normalizePost(raw: any): Post {
-  const created_at = raw.created_at || raw.date || "";
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function normalizePost(value: unknown): Post {
+  const raw = asRecord(value);
+  const created_at = String(raw.created_at || raw.date || "");
 
   const media: MediaItem[] = Array.isArray(raw.media)
     ? raw.media
-        .map((m: any) => ({
-          type: String(m?.type || "image").toLowerCase(),
-          url: resolveUrl(String(m?.url || "")),
-        }))
+        .map((value) => {
+          const item = asRecord(value);
+          return { type: String(item.type || "image").toLowerCase(), url: resolveUrl(String(item.url || "")) };
+        })
         .filter((m: MediaItem) => Boolean(m.url))
     : [];
 
   const thumbnail_url = raw.thumbnail_url ? resolveUrl(String(raw.thumbnail_url)) : null;
 
   return {
-    id: String(raw.id),
-    slug: raw.slug ?? undefined,
-    title: raw.title ?? "(Untitled)",
+    id: String(raw.id ?? ""),
+    slug: typeof raw.slug === "string" ? raw.slug : undefined,
+    title: typeof raw.title === "string" ? raw.title : "(Untitled)",
     created_at,
     media,
-    status: raw.status ?? undefined,
+    status: typeof raw.status === "string" ? raw.status : undefined,
     thumbnail_url,
+    locked: raw.locked === true,
   };
 }
 
@@ -147,7 +175,7 @@ function StatusBadge({ status }: { status?: string }) {
 
 function LoadingGrid() {
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
       {Array.from({ length: 6 }).map((_, i) => (
         <Card key={i} className="bg-black border border-white/10 overflow-hidden">
           <div className="aspect-video">
@@ -163,48 +191,47 @@ function LoadingGrid() {
   );
 }
 
-export default function AllPostsGrid({ hideTitle = false }: { hideTitle?: boolean }) {
+export default function AllPostsGrid({ hideTitle = false, offlinePosts, offlinePreview = false }: { hideTitle?: boolean; offlinePosts?: OfflineBlogPost[]; offlinePreview?: boolean }) {
   const [posts, setPosts] = React.useState<Post[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-
-  const { getToken } = useAuth();
+  const [retryKey, setRetryKey] = React.useState(0);
 
   React.useEffect(() => {
     let mounted = true;
 
     async function fetchPosts() {
+      if (offlinePosts) {
+        setPosts(offlinePreview
+          ? [...offlinePosts, { id: "offline-locked-teaser", title: "Private post", status: "private", created_at: "", locked: true }]
+          : offlinePosts);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError(null);
 
       try {
-        const token = await getToken().catch(() => null);
-
-        // You *can* request "all" here; the API will enforce privacy.
-        const qs = new URLSearchParams();
-        qs.set("status", "all");
-
-        const res = await fetch(`/api/public/blogs?${qs.toString()}`, {
-          cache: "no-store",
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        });
-
-        if (!res.ok) {
-          const text = await res.text().catch(() => "");
-          throw new Error(`API ${res.status} ${text}`);
-        }
-
-        const data = await res.json();
-        const rawList: any[] = Array.isArray(data)
+        // Public listings request only public posts. Authenticated readers use
+        // the same safe endpoint; private access is resolved server-side on an
+        // individual article request and never through a broad listing mode.
+        // Share in-flight work so React Strict Mode's development remount does
+        // not create duplicate requests. Failed requests are cleared so Retry
+        // can make one fresh attempt.
+        const data = await fetchPublicPosts();
+        const payload = asRecord(data);
+        const rawList: unknown[] = Array.isArray(data)
           ? data
-          : data.items ?? data.posts ?? data.blogs ?? [];
+          : [payload.items, payload.posts, payload.blogs].find(Array.isArray) ?? [];
 
         const normalized = rawList.map(normalizePost);
+        if (payload.lockedPosts === true) {
+          normalized.push({ id: "locked-private-teaser", title: "Private post", status: "private", created_at: "", locked: true });
+        }
 
         if (mounted) setPosts(normalized.slice(0, 25));
-      } catch (err: any) {
-        console.error("[AllPostsGrid] fetch error:", err);
-        if (mounted) setError(err?.message ?? "Failed to load posts");
+      } catch (err: unknown) {
+        if (mounted) setError(err instanceof Error ? err.message : "Failed to load posts");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -214,7 +241,7 @@ export default function AllPostsGrid({ hideTitle = false }: { hideTitle?: boolea
     return () => {
       mounted = false;
     };
-  }, [getToken]);
+  }, [offlinePosts, offlinePreview, retryKey]);
 
   if (loading) {
     return (
@@ -225,15 +252,40 @@ export default function AllPostsGrid({ hideTitle = false }: { hideTitle?: boolea
     );
   }
 
-  if (error) return <div className="text-center text-red-500">{error}</div>;
-  if (posts.length === 0) return <div className="text-center text-white/60">No blog posts found.</div>;
+  if (error) return <div className="mx-auto max-w-xl text-center text-red-300" role="alert">
+    <p>{error}</p>
+    <button type="button" className="mt-3 rounded border border-white/20 px-3 py-1.5 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" onClick={() => setRetryKey((value) => value + 1)}>Try again</button>
+  </div>;
+  if (posts.length === 0) return <p className="text-center text-white/60" role="status">
+    Only published public posts appear here. Unpublished and private posts are not listed.
+  </p>;
 
   return (
     <div className="w-full">
       {!hideTitle && <h2 className="mb-6 text-center text-3xl font-bold">All Blog Posts</h2>}
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
         {posts.map((post) => {
+          if (post.locked) {
+            return (
+              <Card key={post.id} className="h-full overflow-hidden bg-black border border-white/10">
+                <div className="relative aspect-video overflow-hidden border-b border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black grid place-items-center">
+                  <span className="text-xs uppercase tracking-[0.2em] text-white/45">Private post</span>
+                </div>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-center sm:justify-start">
+                    <h3 className="text-base font-semibold text-white">Private post</h3>
+                    <StatusBadge status="private" />
+                  </div>
+                  <p className="mt-2 text-sm text-white/70">Sign up or sign in to request access.</p>
+                  {!offlinePreview && <div className="mt-3 flex gap-4 text-sm">
+                    <Link href="/sign-up" className="text-white underline underline-offset-4">Sign up</Link>
+                    <Link href="/sign-in" className="text-white/70 underline underline-offset-4">Sign in</Link>
+                  </div>}
+                </CardContent>
+              </Card>
+            );
+          }
           const thumbnail = getThumbnail(post);
 
           return (

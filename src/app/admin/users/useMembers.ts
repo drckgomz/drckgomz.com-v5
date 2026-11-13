@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import type { MeProfile, ProfileRow } from "./types";
-import { useAuth } from "@clerk/nextjs";
+import { useAuthSession } from "@/components/auth/AuthSessionContext";
 
 function isJson(res: Response) {
   const c = res.headers.get("content-type") || "";
@@ -20,7 +20,7 @@ async function readErr(res: Response) {
 }
 
 export function useMembers() {
-  const { isSignedIn, getToken } = useAuth();
+  const { isSignedIn, getToken } = useAuthSession();
 
   const [me, setMe] = React.useState<MeProfile | null>(null);
   const [users, setUsers] = React.useState<ProfileRow[]>([]);

@@ -1,31 +1,19 @@
 // src/app/page.tsx
 import NavBar from "@/components/home/NavBar";
-import DotsCanvas from "@/components/home/DotsCanvas";
 import HeroSection from "@/components/home/sections/hero/HeroSection";
-import AboutSection from "@/components/home/sections/about/AboutSection";
-import SkillsSection from "@/components/home/sections/skills/SkillsSection";
-import ProjectSection from "@/components/home/sections/project/ProjectSection";
-import ExperienceSection from "@/components/home/sections/experience/ExperienceSection";
-import ContactSection from "@/components/home/sections/contact/ContactSection";
+import OfflineHomePage from "@/components/home/OfflineHomePage";
+import { isOfflineDesignMode } from "@/lib/offline-design-mode";
 
 export default function HomePage() {
+  if (isOfflineDesignMode({ NODE_ENV: process.env.NODE_ENV, OFFLINE_DESIGN_MODE: process.env.OFFLINE_DESIGN_MODE })) {
+    return <OfflineHomePage />;
+  }
+
   return (
-    <div className="min-h-dvh w-full bg-transparent text-white overflow-x-clip">
-      {/* Nav */}
+    <div className="cinematic-home min-h-dvh w-full overflow-x-clip">
       <NavBar />
-
-      {/* Background */}
-      <div className="fixed inset-0 -z-10 pointer-events-none">
-        <DotsCanvas />
-      </div>
-
-      <main className="relative z-10 flex flex-col gap-32 pt-0">
+      <main id="main-content" tabIndex={-1} className="relative z-10">
         <HeroSection />
-        <AboutSection />
-        <ProjectSection />
-        <ExperienceSection />
-        <SkillsSection />
-        <ContactSection />
       </main>
     </div>
   );

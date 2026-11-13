@@ -1,0 +1,11 @@
+# Next phase plan after Phase 3B
+
+1. **Restore permitted isolated browser execution.** In a separately authorized local/CI environment, reproduce the expanded Playwright matrix and generate fresh screenshots before approving changed list/gallery layouts. Do not waive overflow/contrast failures. The current gallery is historical evidence only.
+2. **Review publishing compatibility.** All post PATCH clients must supply expected_updated_at. Check external tooling; do not restore blind writes to make old clients work. Confirm page-local catalog search UX and preserved formats with sanitized fixtures.
+3. **Framework and HTTP integration.** Plan a controlled Next/React security patch, then run a provider-free full Next server/compiler/middleware/Clerk integration fixture. Current tests use real Next response primitives but do not certify network routing or RSC/no-JS rendering. Avoid normal builds that can read live credentials or prerender against production.
+4. **Resolve infrastructure gates separately.** Establish audit credential provenance before STS or bucket discovery; explicitly attest Neon development branch/least-privilege role before any connection. No migration, IAM/bucket/DNS modification or transfer follows automatically from reviewing these docs.
+5. **Verified data consistency design.** Review atomic owner, post/media deletion/reorder and integer-revision schema/transactions. Prepare reviewed development-only migration SQL after exact source/adapter schema decisions. No count-then-write invariant or guessed RPC.
+6. **Editorial capability.** Structured editor/paste/format compatibility, no-JS server article rendering, global search/indexing, draft-only autosave/conflict recovery and upload validation. Preserve explicit publication, current audience rules and private-media limits.
+7. **Real-device/accessibility review.** iOS/Android, touch/keyboard/screen readers, 200%/400% zoom, landscape, low bandwidth, codecs and third-party embed consent/failure states. Scope-wide light palettes need verification beyond fixture token inheritance.
+
+Authentication remains Clerk. Neon/Drizzle and any Better Auth/Auth.js cutover need separate explicit approval and identity recovery/linking design. No cinematic homepage implementation, production tracking, commit, deployment, push or merge is authorized by completion of this phase.

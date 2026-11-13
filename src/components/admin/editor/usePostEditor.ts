@@ -1,6 +1,7 @@
 // src/components/admin/editor/usePostEditor.ts
 "use client";
 
+import { createMediaHydration } from "@/lib/cms/mediaHydration";
 import * as React from "react";
 import type { EditorHandle } from "./Editor";
 import { normalizeMedia, sortMedia, type NormalizedMedia } from "./media";
@@ -10,7 +11,7 @@ type InitialPost = {
   title?: string | null;
   slug?: string | null;
   content?: string | null;
-  media?: any[] | null;
+  media?: unknown[] | null;
 };
 
 export function usePostEditor(
@@ -22,8 +23,8 @@ export function usePostEditor(
   const [title, setTitle] = React.useState<string>(initialPost?.title || "");
   const [postSlug, setPostSlug] = React.useState<string>(initialPost?.slug || slug || "");
   const [content, setContent] = React.useState<string>(initialPost?.content || "");
-  const [mediaList, setMediaList] = React.useState<NormalizedMedia[]>(
-    sortMedia(normalizeMedia(initialPost?.media || []))
+  const [mediaList, setMediaListState] = React.useState<NormalizedMedia[]>(
+    () => sortMedia(normalizeMedia(initialPost?.media || []))
   );
 
   const editorRef = React.useRef<EditorHandle | null>(null);
@@ -36,37 +37,21 @@ export function usePostEditor(
     if (initialPost?.id) setPostId(String(initialPost.id));
   }, [initialPost?.id]);
 
-  // Hydrate media from v5 Next API
+  const hydration = React.useRef<ReturnType<typeof createMediaHydration> | null>(null);
+  if (hydration.current === null) { hydration.current = createMediaHydration(); }
+  const [mediaError, setMediaError] = React.useState("");
+  const setMediaList = React.useCallback<React.Dispatch<React.SetStateAction<NormalizedMedia[]>>>((update) => {
+    hydration.current?.edited();
+    setMediaListState(update);
+  }, []);
   React.useEffect(() => {
     if (!slug) return;
-
-    let aborted = false;
-
-    (async () => {
-      try {
-        const res = await fetch(
-          `/api/admin/posts/${encodeURIComponent(slug)}/media`,
-          { method: "GET", cache: "no-store" }
-        );
-        if (!res.ok) return;
-
-        const json = await res.json().catch(() => ({}));
-        const raw = Array.isArray(json?.media)
-          ? json.media
-          : Array.isArray(json)
-          ? json
-          : [];
-
-        const full = sortMedia(normalizeMedia(raw));
-        if (!aborted) setMediaList(full);
-      } catch (e) {
-        console.error("[usePostEditor] hydrate media error", e);
-      }
-    })();
-
-    return () => {
-      aborted = true;
-    };
+    const source = hydration.current!;
+    let active = true;
+    void source.load(slug, setMediaListState).catch(() => {
+      if (active) setMediaError("Unable to refresh media. Existing edits were retained.");
+    });
+    return () => { active = false; source.cancel(); };
   }, [slug]);
 
   const insertPlaceholder = (m: {
@@ -75,9 +60,10 @@ export function usePostEditor(
     caption?: string | null;
     title?: string | null;
   }) => {
+    if (!["image", "youtube", "instagram"].includes(m.type)) return;
     editorRef.current?.insertMediaPlaceholder({
       id: m.id,
-      type: m.type as any,
+      type: m.type as "image" | "youtube" | "instagram",
       caption: m.caption ?? null,
       title: m.title ?? null,
     });
@@ -90,7 +76,7 @@ export function usePostEditor(
   ) => {
     editorRef.current?.updateMediaCaption({
       id: m.id,
-      type: m.type as any,
+      type: m.type as "image" | "youtube" | "instagram",
       caption: newCaption,
       title: undefined,
     });
@@ -110,6 +96,7 @@ export function usePostEditor(
     content,
     setContent,
     mediaList,
+    mediaError,
     setMediaList,
     editorRef,
     postId,

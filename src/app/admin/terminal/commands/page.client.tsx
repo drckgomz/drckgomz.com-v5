@@ -17,7 +17,7 @@ type Cmd = {
   name: string;
   aliases: string[];
   description: string;
-  actions: any; // string or array
+  actions: unknown; // string or array
   requires_auth: boolean;
   role: string;
   show_in_help: boolean;
@@ -26,7 +26,7 @@ type Cmd = {
   updated_at?: string;
 };
 
-function safeParseArray(v: unknown): any[] {
+function safeParseArray(v: unknown): unknown[] {
   if (Array.isArray(v)) return v;
   if (typeof v === "string") {
     try {
@@ -39,7 +39,8 @@ function safeParseArray(v: unknown): any[] {
   return [];
 }
 
-function normalizeCmd(raw: any): Cmd {
+function normalizeCmd(value: unknown): Cmd {
+  const raw = value && typeof value === "object" ? value as Record<string, unknown> : {};
   return {
     id: Number(raw?.id ?? 0),
     name: String(raw?.name ?? ""),
@@ -133,7 +134,7 @@ export default function ManageTerminalCommandsPageClient() {
       if (!res.ok) throw new Error(`API ${res.status}: ${text.slice(0, 300)}`);
 
       const json = JSON.parse(text);
-      const list: any[] = Array.isArray(json)
+      const list: unknown[] = Array.isArray(json)
         ? json
         : Array.isArray(json?.commands)
         ? json.commands
@@ -142,9 +143,8 @@ export default function ManageTerminalCommandsPageClient() {
         : [];
 
       setRows(list.map(normalizeCmd));
-    } catch (e: any) {
-      console.error("[admin commands] load failed:", e);
-      setError(e?.message ?? "Failed to load commands");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load commands");
       setRows([]);
     } finally {
       setLoading(false);
@@ -152,7 +152,7 @@ export default function ManageTerminalCommandsPageClient() {
   }, []);
 
   React.useEffect(() => {
-    load();
+    void Promise.resolve().then(load);
   }, [load]);
 
   const onCreate = async () => {
@@ -174,9 +174,8 @@ export default function ManageTerminalCommandsPageClient() {
       }
 
       router.push(`/admin/terminal/commands/${command.id}`);
-    } catch (e: any) {
-      console.error(e);
-      alert(e?.message ?? "Create failed");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Create failed");
     }
   };
 
@@ -221,7 +220,7 @@ export default function ManageTerminalCommandsPageClient() {
               <p className="mt-1 text-xs text-white/60">
                 {loading
                   ? "Loading…"
-                  : `${rows.length} command(s) loaded • Use search to filter by name, alias, description, or flags.`}
+                  : error ? "Command catalog unavailable" : `${rows.length} command(s) loaded • Use search to filter by name, alias, description, or flags.`}
               </p>
             </div>
 
@@ -260,7 +259,7 @@ export default function ManageTerminalCommandsPageClient() {
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-semibold text-white">Commands</CardTitle>
               <CardDescription className="text-xs text-white/60">
-                Showing <span className="font-semibold text-white">{filtered.length}</span> result(s)
+                {error ? "Result count unavailable" : <>Showing <span className="font-semibold text-white">{filtered.length}</span> result(s)</>}
               </CardDescription>
             </CardHeader>
 
@@ -269,7 +268,7 @@ export default function ManageTerminalCommandsPageClient() {
             <CardContent className="pt-4">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-xs text-white/60">
-                  {loading ? "Loading…" : `Showing ${filtered.length} result(s)`}
+                  {loading ? "Loading…" : error ? "Result count unavailable" : `Showing ${filtered.length} result(s)`}
                 </div>
 
                 <div className="w-full sm:w-[420px]">
@@ -289,7 +288,7 @@ export default function ManageTerminalCommandsPageClient() {
               </div>
 
               {error ? (
-                <div className="mb-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                <div role="alert" className="mb-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-200">
                   error: {error}
                 </div>
               ) : null}
@@ -302,7 +301,7 @@ export default function ManageTerminalCommandsPageClient() {
                     <Skeleton className="h-10 w-full bg-white/5" />
                     <Skeleton className="h-10 w-full bg-white/5" />
                   </div>
-                ) : filtered.length === 0 ? (
+                ) : error ? null : filtered.length === 0 ? (
                   <div className="px-4 py-6 text-sm text-white/60">No commands found.</div>
                 ) : (
                   <ul className="divide-y divide-white/10">

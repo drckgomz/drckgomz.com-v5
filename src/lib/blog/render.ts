@@ -9,9 +9,6 @@ export type MediaItem = {
   title?: string | null;   // fetched (e.g., YouTube) title
 };
 
-const DBG = (label: string, payload?: any) =>
-  console.debug(`[embed/render] ${label}`, payload);
-
 /** Escape html for attributes/text nodes. */
 function escapeHtml(text: string) {
   return String(text ?? "")
@@ -45,21 +42,37 @@ export function normalize(raw: string) {
 }
 
 /** v3-style YouTube ID extraction (robust for typical URLs). */
-function getYouTubeId(url: string) {
-  const m = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
-  if (m) return m[1];
+export function safeMediaUrl(value: string): boolean {
+  if (!value || /[\u0000-\u001f\u007f\\"<>]/.test(value)) return false;
+  try { return ["http:", "https:"].includes(new URL(value, "https://relative.invalid").protocol); }
+  catch { return false; }
+}
+
+export function getYouTubeId(value: string): string | null {
   try {
-    const u = new URL(url);
-    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1);
-    const maybe = u.searchParams.get("v") || u.pathname.split("/").filter(Boolean).pop();
-    return maybe && /^[0-9A-Za-z_-]{6,}$/.test(maybe) ? maybe : null;
-  } catch {
-    return null;
-  }
+    const url = new URL(value);
+    if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) return null;
+    const host = url.hostname.toLowerCase();
+    let id: string | null = null;
+    if (host === "youtu.be") id = url.pathname.slice(1);
+    if (["youtube.com", "www.youtube.com", "m.youtube.com", "www.youtube-nocookie.com"].includes(host)) {
+      id = url.searchParams.get("v") || (/^\/(embed|shorts)\//.test(url.pathname) ? url.pathname.split("/")[2] : null);
+    }
+    return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+  } catch { return null; }
+}
+
+export function isInstagramUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && ["www.instagram.com", "instagram.com"].includes(url.hostname) &&
+      !url.username && !url.password && /^\/(p|reel|tv)\/[A-Za-z0-9_-]+\/?$/.test(url.pathname);
+  } catch { return false; }
 }
 
 /** Build final HTML for a media item (matches v3 output structure). */
 function buildEmbedHtml(item: MediaItem) {
+  if (!safeMediaUrl(item.url)) return "";
   if (item.type === "youtube") {
     const id = getYouTubeId(item.url);
     if (!id) return "";
@@ -68,6 +81,9 @@ function buildEmbedHtml(item: MediaItem) {
         <iframe
           width="100%"
           height="400"
+          title="${escapeHtml(item.title || item.caption || "YouTube video")}"
+          loading="lazy"
+          referrerpolicy="no-referrer"
           src="https://www.youtube.com/embed/${id}"
           frameborder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -79,12 +95,14 @@ function buildEmbedHtml(item: MediaItem) {
   }
 
   if (item.type === "instagram") {
+    if (!isInstagramUrl(item.url)) return "";
     return `
       <div class="flex justify-center my-0">
         <blockquote class="instagram-media"
-          data-instgrm-permalink="${item.url}"
+          data-instgrm-permalink="${escapeHtml(item.url)}"
           data-instgrm-version="14"
-          style="background:#000; border:0; border-radius:3px; margin:0; max-width:540px; min-width:326px; padding:0; width:100%;">
+          >
+          <a href="${escapeHtml(item.url)}" rel="noopener noreferrer">View Instagram post</a>
         </blockquote>
       </div>
     `;
@@ -94,7 +112,7 @@ function buildEmbedHtml(item: MediaItem) {
   return `
     <div class="flex flex-col items-center my-0">
       <img
-        src="${item.url}"
+        src="${escapeHtml(item.url)}"
         alt="${escapeHtml(item.caption || "Image")}"
         class="rounded-lg max-w-sm"
         loading="lazy"
@@ -112,12 +130,9 @@ function buildEmbedHtml(item: MediaItem) {
  * - tolerates whitespace around id
  */
 export function replacePlaceholders(rawContent: string, media: MediaItem[]) {
-  DBG("replacePlaceholders:start", { rawLen: rawContent?.length, mediaCount: media?.length });
   let html = normalize(rawContent || "");
-  DBG("normalized", html.slice(0, 500));
 
   const items = Array.isArray(media) ? media : [];
-  let replacedAny = false;
 
   // Defensive unwrap once more (if editor wrapped again)
   html = html.replace(/<span[^>]*?>\s*(\[MEDIA .*?\])\s*<\/span>/gi, "$1");
@@ -131,15 +146,10 @@ export function replacePlaceholders(rawContent: string, media: MediaItem[]) {
     const pattern = `\\[MEDIA\\s+${type}[\\s\\S]*?\\(\\s*${idEsc}\\s*\\)\\]`;
     const rx = new RegExp(pattern, "gi");
 
-    const before = html;
-    html = html.replace(rx, (_match) => {
-      DBG("replacing", { type: m.type, id: m.id });
+    html = html.replace(rx, () => {
       return buildEmbedHtml(m);
     });
-    if (before !== html) replacedAny = true;
   }
 
-  DBG("replacedAny", replacedAny);
-  DBG("finalHtmlPreview", html.slice(0, 500));
   return html;
 }

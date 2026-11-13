@@ -2,13 +2,12 @@
 "use client";
 
 import * as React from "react";
-import { useAuth, useClerk } from "@clerk/nextjs";
+import { useAuthSession } from "@/components/auth/AuthSessionContext";
 import { usePathname } from "next/navigation";
 import { startInactivityLogout } from "@/lib/utils/inactivityWatcher";
 
 export default function IdleLogoutGuard({ minutes = 5 }: { minutes?: number }) {
-  const { isLoaded, isSignedIn } = useAuth();
-  const { signOut } = useClerk();
+  const { isLoaded, isSignedIn, signOut } = useAuthSession();
   const pathname = usePathname();
 
   React.useEffect(() => {

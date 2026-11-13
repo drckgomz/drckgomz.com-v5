@@ -4,7 +4,9 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
+import { getYouTubeVideoId } from "@/lib/blog/media";
 import PostRow from "@/components/admin/posts/PostRow";
+import { selectPostThumbnail } from "@/components/admin/posts/thumbnail";
 import { usePosts } from "@/components/admin/posts/usePosts";
 import { TABS, type Tab } from "@/components/admin/posts/types";
 
@@ -16,32 +18,14 @@ import { cn } from "@/lib/utils/utils";
 
 type MediaItem = { type?: string | null; url?: string | null; idx?: number | null };
 
-function extractYouTubeId(url: string): string | undefined {
-  const m =
-    url.match(
-      /(?:youtube\.com\/(?:watch\?.*v=|embed\/|shorts\/)|youtu\.be\/)([0-9A-Za-z_-]{11})/
-    ) || url.match(/[?&]v=([0-9A-Za-z_-]{11})/);
-  return m?.[1];
-}
-
 function topMediaThumb(media?: MediaItem[] | null, fallback?: string | null) {
-  const list = Array.isArray(media) ? media : [];
-  const sorted = [...list].sort((a, b) => (a?.idx ?? 0) - (b?.idx ?? 0));
-  const first = sorted[0];
-  const type = (first?.type ?? "").toLowerCase();
-  const url = first?.url ?? "";
-
-  if (type === "image" && url) return url;
-  if (type === "youtube" && url) {
-    const id = extractYouTubeId(url);
-    if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
-  }
-  return fallback || "/logo192.png";
+  return selectPostThumbnail(media, fallback, getYouTubeVideoId);
 }
 
 export default function ManagePostsPage() {
   const router = useRouter();
   const {
+    page, setPage, hasMore, pendingSlug,
     filtered,
     loading,
     error,
@@ -56,11 +40,12 @@ export default function ManagePostsPage() {
     archive,
     unarchive,
     del,
+    duplicate,
   } = usePosts();
 
   const rows = React.useMemo(
     () =>
-      filtered.map((p: any) => ({
+      filtered.map((p) => ({
         ...p,
         __thumb: topMediaThumb(p.media, p.thumbnail_url),
       })),
@@ -68,14 +53,14 @@ export default function ManagePostsPage() {
   );
 
   return (
-    <main className="min-h-dvh bg-black text-white">
+    <main className="min-h-dvh bg-background text-foreground">
       <div className="pt-5 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-6xl">
           {/* Header row (matches Edit Post page vibe) */}
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
               <h1 className="text-3xl font-bold">Manage Posts</h1>
-              <p className="mt-1 text-xs text-white/60">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Filter, search, and update the status of your blog posts.
               </p>
             </div>
@@ -84,7 +69,7 @@ export default function ManagePostsPage() {
               <Button
                 type="button"
                 variant="secondary"
-                className="bg-white/5 text-white border border-white/25 hover:bg-white hover:text-black"
+                className="bg-muted/40 text-foreground border border-border hover:bg-accent hover:text-accent-foreground"
                 onClick={fetchPosts}
               >
                 Refresh
@@ -92,7 +77,7 @@ export default function ManagePostsPage() {
 
               <Button
                 type="button"
-                className="bg-white/5 text-white border border-white/25 hover:bg-white hover:text-black"
+                className="bg-muted/40 text-foreground border border-border hover:bg-accent hover:text-accent-foreground"
                 onClick={() => router.push("/admin/posts/new")}
               >
                 + New post
@@ -101,7 +86,7 @@ export default function ManagePostsPage() {
               <Button
                 type="button"
                 variant="secondary"
-                className="bg-white/5 text-white border border-white/25 hover:bg-white hover:text-black"
+                className="bg-muted/40 text-foreground border border-border hover:bg-accent hover:text-accent-foreground"
                 onClick={() => router.back()}
               >
                 ← Back
@@ -110,34 +95,36 @@ export default function ManagePostsPage() {
           </div>
 
           {/* Main surface card (same as EditPostPage Card) */}
-          <Card className="rounded-2xl border border-white/10 bg-white/5">
+          <Card className="rounded-2xl border border-border bg-muted/40">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold text-white">
+              <CardTitle className="text-lg font-semibold text-foreground">
                 Posts
               </CardTitle>
-              <CardDescription className="text-xs text-white/60">
+              <CardDescription className="text-xs text-muted-foreground">
                 Choose a tab, search, then edit or change status.
               </CardDescription>
             </CardHeader>
 
-            <Separator className="bg-white/10" />
+            <Separator className="bg-muted" />
 
             <CardContent className="pt-4">
               {/* Tabs + search row */}
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex w-full sm:w-auto gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
+                <div className="flex flex-wrap w-full sm:w-auto gap-1 rounded-xl border border-border bg-muted/40 p-1">
                   {TABS.map((t) => {
                     const active = tab === t;
                     return (
                       <button
                         key={t}
                         type="button"
+                        disabled={pendingSlug !== null}
+                        aria-pressed={active}
                         onClick={() => setTab(t as Tab)}
                         className={cn(
                           "px-3 py-1.5 text-xs capitalize rounded-lg transition-colors",
                           active
-                            ? "bg-white text-black"
-                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                            ? "bg-primary text-primary-foreground"
+                            : "text-foreground/80 hover:bg-muted hover:text-foreground"
                         )}
                       >
                         {t}
@@ -150,11 +137,12 @@ export default function ManagePostsPage() {
                   <Input
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
-                    placeholder="Search title, slug, excerpt…"
+                    aria-label="Search all posts by title, slug or excerpt"
+                    placeholder="Search all posts…"
                     className={cn(
                       "h-9 text-sm",
-                      "bg-white/5 border border-white/10 text-white",
-                      "placeholder:text-white/40",
+                      "bg-muted/40 border border-border text-foreground",
+                      "placeholder:text-muted-foreground",
                       "focus-visible:ring-2 focus-visible:ring-ring"
                     )}
                   />
@@ -162,21 +150,22 @@ export default function ManagePostsPage() {
               </div>
 
               {error ? (
-                <div className="mb-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                <div role="alert" className="mb-3 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs text-destructive">
                   error: {error}
                 </div>
               ) : null}
 
               {/* List surface (matches editor/media list cards) */}
-              <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+              <div className="rounded-2xl border border-border bg-muted/40 overflow-hidden">
                 {loading ? (
-                  <div className="px-4 py-6 text-sm text-white/60">Loading…</div>
+                  <div role="status" className="px-4 py-6 text-sm text-muted-foreground">Loading…</div>
                 ) : rows.length === 0 ? (
-                  <div className="px-4 py-6 text-sm text-white/60">No posts found.</div>
+                  <div role="status" className="px-4 py-6 text-sm text-muted-foreground">No posts found.</div>
                 ) : (
-                  <ul className="divide-y divide-white/10">
-                    {rows.map((p: any) => (
+                  <ul className="divide-y divide-border">
+                    {rows.map((p) => (
                       <PostRow
+                        busy={pendingSlug !== null}
                         key={p.id}
                         post={p}
                         thumbUrl={p.__thumb}
@@ -186,12 +175,18 @@ export default function ManagePostsPage() {
                         onArchive={archive}
                         onUnarchive={unarchive}
                         onDelete={del}
-                        editHref={(slug) => `/admin/posts/${slug}`}
+                        onDuplicate={(slug) => { void duplicate(slug).then(copy => { if (copy) router.push(`/admin/posts/${encodeURIComponent(copy)}`); }); }}
+                        editHref={(slug) => `/admin/posts/${encodeURIComponent(slug)}`}
                       />
                     ))}
                   </ul>
                 )}
               </div>
+              <nav aria-label="Post list pages" className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <Button type="button" variant="outline" disabled={page === 0 || loading || pendingSlug !== null} onClick={() => setPage(page - 1)}>Previous page</Button>
+                <span role="status">Page {page + 1} · Search covers all posts</span>
+                <Button type="button" variant="outline" disabled={!hasMore || loading || pendingSlug !== null} onClick={() => setPage(page + 1)}>Next page</Button>
+              </nav>
             </CardContent>
           </Card>
         </div>

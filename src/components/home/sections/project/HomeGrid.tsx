@@ -18,33 +18,38 @@ type Project = {
 export default function HomeGrid() {
   const [page, setPage] = React.useState(1);
   const [items, setItems] = React.useState<Project[]>([]);
-  const [count, setCount] = React.useState(0);
-  const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
+  const [hasMore, setHasMore] = React.useState(false);
 
-  const load = React.useCallback(async (p: number) => {
-  const offset = (p - 1) * PAGE_SIZE;
-  const res = await fetch(`/api/home/projects?limit=${PAGE_SIZE}&offset=${offset}`, {
-    cache: "no-store",
-  });
-  const json = await res.json().catch(() => ({}));
+  const [error, setError] = React.useState(false);
 
-  console.log("[HomeGrid] projects payload", json); // <- TEMP
-
-  setItems(Array.isArray(json?.items) ? json.items : []);
-  setCount(
-    Number.isFinite(json?.count)
-      ? Number(json.count)
-      : Array.isArray(json?.items)
-      ? json.items.length
-      : 0
-  );
-}, []);
-
-
-  React.useEffect(() => { load(page); }, [page, load]);
+  React.useEffect(() => {
+    const controller = new AbortController();
+    setError(false);
+    async function load() {
+      try {
+        const offset = (page - 1) * PAGE_SIZE;
+        const res = await fetch(`/api/home/projects?limit=${PAGE_SIZE}&offset=${offset}`, {
+          cache: "no-store", signal: controller.signal,
+        });
+        if (!res.ok) throw new Error("Failed to load projects");
+        const json = await res.json();
+        if (controller.signal.aborted) return;
+        setItems(Array.isArray(json?.items) ? json.items : []);
+        setHasMore(json?.hasMore === true);
+      } catch {
+        if (controller.signal.aborted) return;
+        setItems([]);
+        setHasMore(false);
+        setError(true);
+      }
+    }
+    void load();
+    return () => controller.abort();
+  }, [page]);
 
   return (
     <div className="w-full">
+      {error && <p role="status">Projects could not be loaded. Please try again later.</p>}
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
         {items.map((p) => (
           <ProjectTile key={p.id} project={p} />
@@ -60,9 +65,9 @@ export default function HomeGrid() {
             ← Prev
           </button>
         )}
-        {count > PAGE_SIZE && page < totalPages && (
+        {hasMore && (
           <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            onClick={() => setPage((p) => p + 1)}
             className="px-6 py-2 rounded-md ring-1 ring-white/20 hover:bg-white/10"
           >
             Next →

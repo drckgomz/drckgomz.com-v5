@@ -1,4 +1,5 @@
 // src/app/admin/posts/[slug]/page.tsx
+import { postMetadataAvailable } from "@/lib/db/repositories/admin-posts";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
 import { getAdminPostBySlug } from "@/lib/admin/getAdminPost";
 import EditPostForm from "@/components/admin/posts/EditPostForm";
@@ -36,7 +37,7 @@ export default async function EditPostPage({
           </div>
 
           <Card className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-6">
-            <EditPostForm initialPost={initialPost} />
+            <EditPostForm initialPost={initialPost} metadataEditable={await postMetadataAvailable()} />
           </Card>
         </div>
       </div>

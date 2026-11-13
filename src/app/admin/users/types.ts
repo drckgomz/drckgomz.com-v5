@@ -7,9 +7,10 @@ export type ProfileRow = {
   first_name: string;
   last_name: string;
 
-  role: string; // "user" | "admin"
+  role: string | null; // null confers no administrative privilege
   can_view_private: boolean;
-  is_owner: boolean;
+  is_owner: boolean | null;
+  is_whitelist_admin?: boolean | null;
   is_banned: boolean;
 
   banned_at: string | null;

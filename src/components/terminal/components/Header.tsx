@@ -9,7 +9,7 @@ export default function Header() {
           href="/"
           className="text-4xl sm:text-6xl font-bold text-white hover:opacity-80 tracking-wider"
         >
-          DRCKGOMZ
+          drckgomz
         </Link>
       </div>
     </header>

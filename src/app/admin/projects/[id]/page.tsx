@@ -1,12 +1,8 @@
-// src/app/admin/projects/[id]/page.tsx
-import { requireAdmin } from "@/lib/admin/requireAdmin";
-import ProjectEditorPageClient from "./project-editor-page-client";
-
-export default async function AdminProjectEditPage(props: {
-  params: Promise<{ id: string }>;
-}) {
-  await requireAdmin();
-
-  const { id } = await props.params;
-  return <ProjectEditorPageClient id={id} />;
+import ManagementPage,{Unavailable} from '@/components/admin/management/ManagementPage';
+import {requireManagementOwner} from '@/lib/admin/management';
+import {resourceEditor,projectDefaults} from '@/lib/admin/resource-editor';
+export default async function ProjectEditor({params}:{params:Promise<{id:string}>}) {
+  await requireManagementOwner();const{id}=await params;
+  const editor=await resourceEditor('projects',id,projectDefaults);
+  return <ManagementPage title="Edit project" description="Manage project content, technology tags, links and publication.">{editor??<Unavailable>The transactional project backend is not installed. No record has been loaded and no changes were made.</Unavailable>}</ManagementPage>;
 }

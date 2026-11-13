@@ -10,7 +10,7 @@ type InputRef =
 type Props = {
   input: string;
   setInput: (v: string) => void;
-  handleSubmit: (e: React.FormEvent) => void;
+  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   inputRef: InputRef;
   history: string[];
   historyIndex: number;
@@ -89,10 +89,6 @@ export default function TerminalInput({
           autoFocus={!isIOS} // ✅ don't autofocus on iOS
         />
 
-        {/* ✅ IMPORTANT: makes iOS “Go/Return” submit reliably */}
-        <button type="submit" className="sr-only" tabIndex={-1} aria-hidden="true">
-          submit
-        </button>
       </form>
     </div>
   );

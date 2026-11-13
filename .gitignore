@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.neon.development.example
 
 # vercel
 .vercel
@@ -50,3 +51,12 @@ public/x.png
 public/youtube.png
 public/do-u-remember.mp3
 public/dockBackground.webm
+
+# Synthetic local browser review artifacts
+/.artifacts/
+/test-results/
+/playwright-report/
+
+# Python inspector/test caches
+__pycache__/
+*.py[cod]

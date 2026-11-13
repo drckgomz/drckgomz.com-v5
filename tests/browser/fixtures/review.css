@@ -1,0 +1,16 @@
+/* Review frame only; production content and token CSS are imported separately. */
+body { margin: 0; background: var(--background); color: var(--foreground); font-family: system-ui, sans-serif; }
+.review-shell { min-height: 100vh; }
+.review-shell > header, .review-shell > main, .review-shell > footer { width: min(100% - 2rem, 76rem); margin-inline: auto; }
+.review-shell > main { max-width: 72ch; padding-block: 2rem 4rem; min-width: 0; }
+.review-shell > header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1rem; border-bottom: 1px solid var(--border); }
+.review-shell nav { display: flex; gap: 1rem; }
+.review-shell header span, .review-shell footer { font-size: .8rem; color: var(--muted-foreground); }
+.review-shell a { text-decoration: underline; }
+.review-shell h1 { font-size: clamp(1.8rem, 5vw, 3rem); line-height: 1.15; margin-bottom: 2rem; overflow-wrap: anywhere; }
+.review-shell :focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; }
+.review-skip { position: absolute; top: -5rem; } .review-skip:focus { top: 0; background: var(--background); padding: .5rem; z-index: 5; }
+.review-shell > footer { padding-block: 2rem; }
+/* Frame-level sizing; content overflow behavior lives in production CSS. */
+.review-shell [role="textbox"] { overflow-wrap: anywhere; max-width: 100%; }
+.review-shell [role="textbox"] :where(img,iframe,video) { max-width: 100%; }

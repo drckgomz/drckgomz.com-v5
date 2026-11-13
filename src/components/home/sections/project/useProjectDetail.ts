@@ -21,8 +21,8 @@ export type ProjectMedia = {
   url: string;
   caption?: string | null;
   idx?: number | null;
-  meta?: any;
-  created_at?: string;
+  meta?: unknown;
+  created_at?: string | null;
 };
 
 export function useProjectDetail(project?: Project | null) {

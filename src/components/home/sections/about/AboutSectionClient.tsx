@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -29,6 +29,8 @@ export default function AboutSectionClient({
   media,
 }: AboutSectionClientProps) {
   const [idx, setIdx] = useState(0);
+  const activeIndex = idx % Math.max(1, media.length);
+  const reducedMotion = useReducedMotion();
 
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -37,29 +39,9 @@ export default function AboutSectionClient({
   const hasMany = media.length > 1;
 
   const current = useMemo(
-    () => (media.length ? media[Math.min(idx, media.length - 1)] : null),
-    [media, idx]
+    () => (media.length ? media[activeIndex] : null),
+    [media, activeIndex]
   );
-
-  // Guard index if media changes for some reason
-  useEffect(() => {
-    if (idx >= media.length && media.length > 0) {
-      setIdx(0);
-    }
-  }, [idx, media.length]);
-
-  useEffect(() => {
-  // Preload all variants (original + w800 + w1600) once on mount
-  media.forEach((m) => {
-    [m.original, m.w800, m.w1600]
-      .filter(Boolean)
-      .forEach((src) => {
-        const img = new Image();
-        img.src = src as string;
-      });
-  });
-}, [media]);
-
 
   const primarySrc =
     current?.w1600 || current?.original || "/logo192.png";
@@ -118,9 +100,9 @@ export default function AboutSectionClient({
     <>
       <motion.section
         id="about"
-        initial={{ opacity: 0, y: 50 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7 }}
+        transition={{ duration: reducedMotion ? 0 : 0.7 }}
         viewport={{ once: true }}
         className="w-full min-h-screen flex flex-col items-center justify-center px-6 text-white"
       >
@@ -146,7 +128,7 @@ export default function AboutSectionClient({
                       className="w-full h-full object-cover cursor-zoom-in"
                       loading="lazy"
                       decoding="async"
-                      onClick={() => openLightbox(idx)}
+                      onClick={() => openLightbox(activeIndex)}
                       onError={(e) => {
                         const el = e.currentTarget as HTMLImageElement;
                         el.src = fallbackOriginal;
@@ -194,7 +176,7 @@ export default function AboutSectionClient({
                         aria-label={`Go to slide ${i + 1}`}
                         onClick={() => setIdx(i)}
                         className={`w-2.5 h-2.5 rounded-full transition ${
-                          i === idx ? "bg-white" : "bg-white/40 hover:bg-white/70"
+                          i === activeIndex ? "bg-white" : "bg-white/40 hover:bg-white/70"
                         }`}
                       />
                     ))}
@@ -247,7 +229,6 @@ export default function AboutSectionClient({
                 <AnimatePresence mode="wait">
                   <motion.img
                     key={`${lbMedia.id}-${lbPrimarySrc}`}
-                    // eslint-disable-next-line @next/next/no-img-element
                     src={lbPrimarySrc}
                     srcSet={lbSrcSet}
                     sizes="100vw"
@@ -256,7 +237,7 @@ export default function AboutSectionClient({
                     initial={{ opacity: 0, scale: 0.985 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.985 }}
-                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    transition={{ duration: reducedMotion ? 0 : 0.25, ease: "easeInOut" }}
                     onError={(e) => {
                       const el = e.currentTarget as HTMLImageElement;
                       el.src = lbFallbackOriginal;

@@ -45,17 +45,21 @@ export async function PATCH(
   if (denied) return denied;
 
   const { mediaId } = await ctx.params;
-  const id = decodeURIComponent(mediaId);
+  const id = mediaId;
 
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  // Only allow caption updates for now
-  const raw = (body as any).caption;
-  const caption =
-    raw === null || raw === undefined ? null : String(raw).trim() || null;
+  if (Array.isArray(body) || Object.keys(body).some(key => key !== "caption") || !("caption" in body)) {
+    return NextResponse.json({ error: "Only caption updates are supported." }, { status: 400 });
+  }
+  const raw: unknown = body.caption;
+  if (raw !== null && (typeof raw !== "string" || raw.length > 2000)) {
+    return NextResponse.json({ error: "Caption must be text of at most 2000 characters." }, { status: 400 });
+  }
+  const caption = typeof raw === "string" ? raw.trim() || null : null;
 
   const supabase = getSupabaseAdmin();
 
@@ -66,7 +70,7 @@ export async function PATCH(
     .select("id,post_id,type,url,caption,idx")
     .maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Media operation failed." }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   return NextResponse.json({ media: data });
@@ -80,7 +84,7 @@ export async function DELETE(
   if (denied) return denied;
 
   const { mediaId } = await ctx.params;
-  const id = decodeURIComponent(mediaId);
+  const id = mediaId;
 
   const supabase = getSupabaseAdmin();
 
@@ -91,21 +95,21 @@ export async function DELETE(
     .eq("id", id)
     .maybeSingle();
 
-  if (findErr) return NextResponse.json({ error: findErr.message }, { status: 500 });
+  if (findErr) return NextResponse.json({ error: "Media operation failed." }, { status: 500 });
   if (!existing?.id) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const postId = existing.post_id as string | null;
 
   const { error: delErr } = await supabase.from(MEDIA_TABLE).delete().eq("id", id);
-  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
+  if (delErr) return NextResponse.json({ error: "Media operation failed." }, { status: 500 });
 
   // keep ordering consistent
   if (postId) {
     try {
       await resequenceIdx(supabase, postId);
-    } catch (e: any) {
+    } catch {
       // deletion succeeded; reindex failed (rare) — still return ok
-      return NextResponse.json({ ok: true, id, warning: String(e?.message ?? e) });
+      return NextResponse.json({ ok: true, id, warning: "Media removed, but order cleanup failed. Reload the media list." });
     }
   }
 

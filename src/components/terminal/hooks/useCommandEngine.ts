@@ -2,7 +2,8 @@
 "use client";
 
 import * as React from "react";
-import { CommandEngine } from "@/components/terminal/lib/engine";
+import { parseTerminalActions } from "@/components/terminal/lib/actions";
+import { CommandEngine, type EngineCommand } from "@/components/terminal/lib/engine";
 import { useRouter } from "next/navigation";
 
 type UseCommandEngineArgs = {
@@ -16,12 +17,12 @@ type UseCommandEngineArgs = {
 };
 
 // DEBUG helpers
-const info  = (...a: any[]) => console.info("[TERMINAL]", ...a);
-const warn  = (...a: any[]) => console.warn("[TERMINAL]", ...a);
-const error = (...a: any[]) => console.error("[TERMINAL]", ...a);
+const info  = (...a: unknown[]) => console.info("[TERMINAL]", ...a);
+const warn  = (...a: unknown[]) => console.warn("[TERMINAL]", ...a);
+const error = (...a: unknown[]) => console.error("[TERMINAL]", ...a);
 
 // robust boolean normalizer so "false", 0, undefined are handled correctly
-const toBool = (v: any, defaultIfUndef = true) => {
+const toBool = (v: unknown, defaultIfUndef = true) => {
   if (v === undefined || v === null) return defaultIfUndef;
   if (typeof v === "boolean") return v;
   if (typeof v === "number") return v !== 0;
@@ -46,8 +47,8 @@ export function useCommandEngine({
     let cancelled = false;
 
     async function loadAndBuild() {
-      const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-      const url = base ? `${base}/v1/public/terminal/commands` : "/api/terminal/commands";
+      // Keep media/action discovery behind the same-origin authorization boundary.
+      const url = "/api/terminal/commands";
 
       try {
         info("fetch:start", { url });
@@ -66,9 +67,11 @@ export function useCommandEngine({
         // CHANGED: accept both array and { items: [...] } shapes
         // If payload is { items: [...] }, prefer that; otherwise, if it's already an array, use it.
         // Anything else -> empty array.
-        const rows: any[] = Array.isArray(payload)
+        const rawRows: unknown[] = Array.isArray(payload)
           ? payload
           : (payload && Array.isArray(payload.items) ? payload.items : []);
+
+        const rows = rawRows.filter((row): row is Record<string, unknown> => !!row && typeof row === "object" && !Array.isArray(row));
 
         info("fetch:rows", {
           type: Array.isArray(payload) ? "array" : typeof payload,
@@ -117,25 +120,15 @@ export function useCommandEngine({
         if (rows.length) {
           rows
             // keep enabled or undefined; only drop if explicitly false/0/"false"
-            .filter((r: any) => toBool(r?.enabled, true))
-            .forEach((r: any, idx: number) => {
-              // normalize actions whether stringified JSON or array
-              let acts: any[] = [];
-              if (Array.isArray(r.actions)) {
-                acts = r.actions;
-              } else if (typeof r.actions === "string") {
-                try {
-                  const parsed = JSON.parse(r.actions);
-                  if (Array.isArray(parsed)) acts = parsed;
-                } catch (e) {
-                  warn("actions JSON parse failed", { idx, name: r?.name, actions: r.actions, e });
-                }
-              }
+            .filter((r) => toBool(r?.enabled, true))
+            .forEach((r, idx) => {
+              const acts = parseTerminalActions(r.actions);
+              if (!acts) { warn("Invalid terminal actions", { idx }); return; }
 
-              const item = {
+              const item: EngineCommand = {
                 name: String(r.name || "").toLowerCase(),
-                aliases: Array.isArray(r.aliases) ? r.aliases.map((a: string) => a.toLowerCase()) : [],
-                description: r.description || "",
+                aliases: Array.isArray(r.aliases) ? r.aliases.filter((a): a is string => typeof a === "string").map(a => a.toLowerCase()) : [],
+                description: typeof r.description === "string" ? r.description : "",
                 actions: acts,
                 requiresAuth: toBool(r.requires_auth, false),
                 role: r.role === "admin" ? "admin" : "user",
@@ -152,7 +145,7 @@ export function useCommandEngine({
                 actionsCount: item.actions?.length ?? 0,
               });
 
-              eng.register(item as any);
+              eng.register(item);
             });
         }
 
@@ -168,13 +161,6 @@ export function useCommandEngine({
             realCommands: real.length,
             names: real.map((c) => c.name),
           });
-
-          try {
-            (window as any).__TERMINAL_DEBUG__ = {
-              list: () => eng.list(),
-              names: () => eng.list().map((c) => c.name),
-            };
-          } catch {}
 
           console.timeEnd("[TERMINAL] fetch+build");
         }

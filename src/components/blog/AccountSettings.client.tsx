@@ -29,24 +29,29 @@ export default function AccountSettingsClient({ initialProfile }: Props) {
   const [saving, setSaving] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
 
-  const [username, setUsername] = React.useState(initialProfile.username ?? "");
+  const [displayName, setDisplayName] = React.useState(initialProfile.display_name ?? "Member");
+  const [saved, setSaved] = React.useState<string | null>(null);
   const [firstName, setFirstName] = React.useState(initialProfile.first_name ?? "");
   const [lastName, setLastName] = React.useState(initialProfile.last_name ?? "");
-  const [avatarColor, setAvatarColor] = React.useState(initialProfile.avatar_color ?? "#4A90E2");
+  const [avatarColor, setAvatarColor] = React.useState(() => {
+    const configured = initialProfile.avatar_color ?? "";
+    return /^#[0-9a-f]{6}$/i.test(configured) ? configured.toUpperCase() : "#4A90E2";
+  });
 
   const email = initialProfile.email ?? "";
 
   const initials =
     ((firstName?.[0] || "") + (lastName?.[0] || "")).toUpperCase() ||
-    (username?.[0] || "U").toUpperCase();
+    (displayName?.[0] || "U").toUpperCase();
 
   async function handleSaveAll() {
     setErr(null);
+    setSaved(null);
     try {
       setSaving(true);
 
       const body = {
-        username: username.trim(),
+        display_name: displayName.trim(),
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         avatar_color: avatarColor.trim(),
@@ -62,16 +67,10 @@ export default function AccountSettingsClient({ initialProfile }: Props) {
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error || `Failed to save (HTTP ${res.status})`);
 
-      // Optional: keep local cache in sync (your avatar reads server-side now, but this is harmless)
-      try {
-        localStorage.setItem("username", body.username);
-        localStorage.setItem("avatarColor", body.avatar_color);
-      } catch {}
-
-      alert("Profile saved!");
+      setSaved("Profile saved.");
       router.refresh(); // re-fetch server data
-    } catch (e: any) {
-      setErr(e?.message || "Save failed");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -83,7 +82,7 @@ export default function AccountSettingsClient({ initialProfile }: Props) {
         <CardHeader className="space-y-1">
           <CardTitle className="text-3xl font-bold text-white text-center">Account Settings</CardTitle>
           <CardDescription className="text-center text-xs text-white">
-            Update your display name and avatar color. Email/sign-in are managed by Clerk.
+            Update your display name and avatar color. Email and sign-in are managed by the site authentication provider.
           </CardDescription>
         </CardHeader>
 
@@ -93,10 +92,12 @@ export default function AccountSettingsClient({ initialProfile }: Props) {
               {err}
             </div>
           )}
+          {saved && <p role="status" className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-100">{saved}</p>}
 
           {/* Avatar Preview */}
           <div className="flex items-center gap-4">
             <div
+              data-testid="profile-avatar-preview"
               className="flex h-14 w-14 items-center justify-center rounded-full text-lg text-white font-semibold border border-white/20 shadow-sm"
               style={{ backgroundColor: avatarColor }}
             >
@@ -145,11 +146,12 @@ export default function AccountSettingsClient({ initialProfile }: Props) {
 
           {/* Username */}
           <div className="space-y-1 text-white">
-            <Label htmlFor="usernameInput">Display name</Label>
+            <Label htmlFor="displayNameInput">Display name</Label>
             <Input
-              id="usernameInput"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              id="displayNameInput"
+              value={displayName}
+              maxLength={80}
+              onChange={(e) => setDisplayName(e.target.value)}
               className="bg-gray-900 border-gray-700"
             />
           </div>

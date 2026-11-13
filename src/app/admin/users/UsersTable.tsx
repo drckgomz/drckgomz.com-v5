@@ -80,7 +80,7 @@ export function UsersTable({
   };
 
   const doPatch = async (u: ProfileRow, body: Record<string, unknown>) => {
-    await onPatch(u.id, { email: u.email, ...body });
+    await onPatch(u.id, body);
   };
 
   return (
@@ -135,10 +135,10 @@ export function UsersTable({
                 const isAdmin = isOwner || String(u.role || "").toLowerCase() === "admin";
 
                 // Safety rules (same spirit as your v4)
-                const canEditAdmin = !isOwner && !isSelf;
-                const canEditPrivate = !isOwner;
-                const canEditBanned = !isOwner && !isSelf;
-                const canMakeOwner = !!me?.is_owner && !u.is_owner;
+                const canEditAdmin = !!me?.is_owner && !isOwner && !isSelf;
+                const canEditPrivate = !isOwner && !isSelf && (!!me?.is_owner || (!isAdmin && !u.is_whitelist_admin));
+                const canEditBanned = !isOwner && !isSelf && (!!me?.is_owner || (!isAdmin && !u.is_whitelist_admin));
+                const canMakeOwner = !!me?.is_owner && !u.is_owner && !isSelf && u.enabled === true && u.is_banned === false;
 
                 const name =
                   u.first_name || u.last_name
@@ -274,6 +274,15 @@ export function UsersTable({
                     {/* actions */}
                     <TableCell className="align-top text-right">
                       <div className="flex justify-end gap-2">
+                        {me?.is_owner && isOwner && !isSelf && (!u.enabled || u.is_banned) ? (
+                          <Button size="sm" variant="outline" onClick={() => {
+                            if (window.confirm("Restore this owner's enabled, unbanned access?")) {
+                              void doPatch(u, { enabled: true, is_banned: false });
+                            }
+                          }}>
+                            Restore owner access
+                          </Button>
+                        ) : null}
                         {canMakeOwner ? (
                           <Button
                             size="sm"

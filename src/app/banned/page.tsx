@@ -2,13 +2,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useClerk } from "@clerk/nextjs";
+import { useAuthSession } from "@/components/auth/AuthSessionContext";
 import { Button } from "@/components/ui/button";
 import DotsCanvas from "@/components/home/DotsCanvas";
 
 export default function BannedPage() {
   const router = useRouter();
-  const { signOut } = useClerk();
+  const { signOut } = useAuthSession();
 
   const handleReturn = async () => {
     try {

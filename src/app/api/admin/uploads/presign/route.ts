@@ -34,8 +34,12 @@ export async function POST(req: Request) {
     if (scope !== "projects") {
       return NextResponse.json({ error: "Invalid scope" }, { status: 400 });
     }
-    if (!projectId) {
-      return NextResponse.json({ error: "Missing projectId" }, { status: 400 });
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(projectId)) {
+      return NextResponse.json({ error: "Invalid projectId" }, { status: 400 });
+    }
+
+    if (filename.length > 240 || !["image/png", "image/jpeg", "image/gif", "image/webp", "image/avif", "video/mp4", "video/webm", "video/quicktime", "application/pdf", "text/plain", "application/octet-stream"].includes(contentType)) {
+      return NextResponse.json({ error: "Unsupported upload type or filename." }, { status: 400 });
     }
 
     const region = mustEnv("AWS_REGION");
@@ -56,21 +60,12 @@ export async function POST(req: Request) {
       Bucket: bucket,
       Key: key,
       ContentType: contentType,
+      ...(!contentType.startsWith("image/") && !contentType.startsWith("video/") ? { ContentDisposition: "attachment" } : {}),
     });
 
     const url = await getSignedUrl(s3, cmd, { expiresIn: 60 * 5 });
     return NextResponse.json({ url, key });
-  } catch (err: any) {
-    console.error("PRESIGN_ERROR:", err);
-    return NextResponse.json(
-      {
-        error: err?.message || String(err),
-        name: err?.name,
-        stack: process.env.NODE_ENV === "development" ? err?.stack : undefined,
-      },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Upload authorization failed." }, { status: 500 });
   }
-
 }
-

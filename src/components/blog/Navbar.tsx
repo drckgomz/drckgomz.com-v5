@@ -4,10 +4,10 @@ import "server-only";
 import NavbarClientShell from "@/components/blog/NavbarClientShell";
 import type { UserProfile } from "@/lib/profile/types";
 
-export default function Navbar() {
+export default function Navbar({ offlinePreview = false }: { offlinePreview?: boolean }) {
   // IMPORTANT:
   // Do not call getUserProfile() here, or /blog becomes dynamic due to headers()/cookies.
   const profile: UserProfile | null = null;
 
-  return <NavbarClientShell profile={profile} />;
+  return <NavbarClientShell profile={profile} offlinePreview={offlinePreview} />;
 }

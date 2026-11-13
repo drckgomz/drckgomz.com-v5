@@ -1,0 +1,3 @@
+CREATE UNIQUE INDEX "app_user_roles_single_owner_uq" ON "app"."user_roles" USING btree ("role") WHERE "app"."user_roles"."role" = 'owner';--> statement-breakpoint
+ALTER TABLE "app"."home_projects" ADD CONSTRAINT "app_home_projects_revision_ck" CHECK ("app"."home_projects"."revision" > 0);--> statement-breakpoint
+ALTER TABLE "app"."home_sections" ADD CONSTRAINT "app_home_sections_version_ck" CHECK ("app"."home_sections"."version" > 0);

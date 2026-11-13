@@ -2,7 +2,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useClerk, useUser } from "@clerk/nextjs";
+import { useAuthSession } from "@/components/auth/AuthSessionContext";
 import type { UserProfile } from "@/lib/profile/types";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -19,8 +19,7 @@ import { LogOut, Settings, Shield } from "lucide-react";
 
 export default function UserAvatarClient({ profile }: { profile: UserProfile | null }) {
   const router = useRouter();
-  const { signOut } = useClerk();
-  const { isLoaded, isSignedIn, user } = useUser();
+  const { signOut, isLoaded, isSignedIn, user } = useAuthSession();
 
   // While Clerk is loading, avoid flicker: show nothing or a small skeleton.
   if (!isLoaded) {
@@ -39,7 +38,7 @@ export default function UserAvatarClient({ profile }: { profile: UserProfile | n
   }
 
   // Signed in => show avatar dropdown even if profile hasn't loaded yet.
-  const email = profile?.email || user?.primaryEmailAddress?.emailAddress || "";
+  const email = profile?.email || user?.email || "";
   const role = (profile?.role || "").toLowerCase();
   const isAdmin =
     role === "admin" || Boolean(profile?.is_owner) || Boolean(profile?.is_whitelist_admin);
@@ -65,7 +64,7 @@ export default function UserAvatarClient({ profile }: { profile: UserProfile | n
           aria-label="Account menu"
         >
           <Avatar className="h-8 w-8 text-xs font-semibold text-white" style={{ backgroundColor: bg }}>
-            <AvatarFallback className="text-[0.8rem] font-semibold text-white" style={{ backgroundColor: bg }}>
+          <AvatarFallback data-testid="account-avatar" className="text-[0.8rem] font-semibold text-white" style={{ backgroundColor: bg }}>
               {initial}
             </AvatarFallback>
           </Avatar>
